@@ -172,6 +172,10 @@ public class MvbView extends JFrame {
 		tableScrPane.setViewportView(data);
 	}
 
+	public void addTree(JKeyTree2 data) {
+		tableScrPane.setViewportView(data);
+	}
+
 	/*
 	 * This method registers the controllers for all items in each menu. This
 	 * method should only be executed once.
@@ -180,6 +184,16 @@ public class MvbView extends JFrame {
 		JMenuItem menuItem;
 
 		KeyController kc = new KeyController(this);
+
+		for (int i = 0; i < keyAdmin.getItemCount(); i++) {
+			menuItem = keyAdmin.getItem(i);
+			menuItem.addActionListener(kc);
+		}
+	}
+	public void registerControllers2() {
+		JMenuItem menuItem;
+
+		KeyController2 kc = new KeyController2(this);
 
 		for (int i = 0; i < keyAdmin.getItemCount(); i++) {
 			menuItem = keyAdmin.getItem(i);
@@ -231,7 +245,7 @@ class ControllerRegister extends WindowAdapter {
 	}
 
 	public void windowClosed(WindowEvent e) {
-		mvb.registerControllers();
+		mvb.registerControllers2();
 //		MvbView mv = (MvbView)this.getOwner();
 		mvb.showAllKeys();
 

@@ -8,6 +8,10 @@ public class KeyBean {
 	private String kev;
 	private String kcv;
 
+	public KeyBean(KeyBean kb) {
+		this(kb.getKid(), kb.getTyp(), kb.getKev(), kb.getKcv());
+	}
+	
 	public KeyBean(String kid, String typ, String kev, String kcv) {
 		setKid(kid);
 		setTyp(typ);
@@ -65,7 +69,11 @@ public class KeyBean {
 	}
 
 	public boolean isATM() {
-		return typ.equals("TPK") || (!kid.equalsIgnoreCase("99999999") && typ.equals("TMK"));
+		return /* typ.equals("TPK") || */ (!kid.equalsIgnoreCase("99999999") && typ.equals("TMK"));
+	}
+
+	public boolean isTPK() {
+		return typ.equals("TPK");
 	}
 
 	public boolean isZPK() {

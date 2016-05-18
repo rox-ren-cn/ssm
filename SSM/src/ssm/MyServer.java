@@ -2,7 +2,10 @@ package ssm;
 
 import ssm.tools.LogUtil;
 import ssm.util.CmdBean;
+import ssm.util.KeyTree2;
 import ssm.jdbc.JDBCAdapter;
+import ssm.jdbc.MvbOracleConnection;
+
 import java.net.*;
 
 import java.io.*;
@@ -14,6 +17,8 @@ public class MyServer extends Thread {
 
     JDBCAdapter jdbcadapter;
     Socket conn_sock = null;
+    
+    MvbOracleConnection mvb = MvbOracleConnection.getInstance();
 
     public Socket getConn_sock() {
         return conn_sock;
@@ -31,6 +36,7 @@ public class MyServer extends Thread {
         int iLength;
         String tranLog;
 
+        KeyTree2 keyTree = KeyTree2.getInstance();
         CmdBean cmdBean = new CmdBean();
         DataInputStream dis = null;
         OutputStream out = null;
@@ -84,11 +90,11 @@ public class MyServer extends Thread {
                 }
 
                 /*
-		* Pack and Send response message back
+                 * Pack and Send response message back
                  */
                 cmdBean.Pack();
-                byout = cmdBean.getPackedMsg().getBytes("ISO-8859-1");
-                iLength = cmdBean.getPackedMsg().length();
+                byout = cmdBean.getMsg().getBytes("ISO-8859-1");
+                iLength = cmdBean.getMsg().length();
 
                 out.write(byout, 0, iLength);
                 tranLog = LogUtil.HexStringLog(byout, iLength);
@@ -157,26 +163,27 @@ public class MyServer extends Thread {
     }
 
     public int connectDB() {
-        jdbcadapter = new JDBCAdapter();
-
-        ssm.file.readPropertyFile rpf = new ssm.file.readPropertyFile();
-        String dbDriver = rpf.readProperty(CONFIGFILENAME, "ssm.jdbcDriver");
-        String connURL = rpf.readProperty(CONFIGFILENAME, "ssm.jdbcURL");
-        String dbUser = rpf.readProperty(CONFIGFILENAME, "ssm.dbUsername");
-        String dbPasswd = rpf.readProperty(CONFIGFILENAME, "ssm.dbPassword");
-
-        LogUtil.writeLog("Connect DB, config file: [config/ssm.properties] dbUser/dbPasswd: [" + dbUser + "/"
-                + dbPasswd + "]");
-        LogUtil.writeLog("Connect DB, connURL = " + connURL);
-
-        if (jdbcadapter.loadDriver(dbDriver, connURL, dbUser, dbPasswd) != true) {
-            LogUtil.writeLog("loadDriver error,user:" + dbUser + " dbPasswd:" + dbPasswd);
-            LogUtil.writeLog(jdbcadapter.getHint());
-            return -1;
-        }
-
-        String sSql = "ALTER SESSION SET NLS_DATE_FORMAT='YYYYMMDDHH24MISS'";
-        jdbcadapter.executeUpdate(sSql);
+    	mvb.connect("ssm", "1234");
+//        jdbcadapter = new JDBCAdapter();
+//
+//        ssm.file.readPropertyFile rpf = new ssm.file.readPropertyFile();
+//        String dbDriver = rpf.readProperty(CONFIGFILENAME, "ssm.jdbcDriver");
+//        String connURL = rpf.readProperty(CONFIGFILENAME, "ssm.jdbcURL");
+//        String dbUser = rpf.readProperty(CONFIGFILENAME, "ssm.dbUsername");
+//        String dbPasswd = rpf.readProperty(CONFIGFILENAME, "ssm.dbPassword");
+//
+//        LogUtil.writeLog("Connect DB, config file: [config/ssm.properties] dbUser/dbPasswd: [" + dbUser + "/"
+//                + dbPasswd + "]");
+//        LogUtil.writeLog("Connect DB, connURL = " + connURL);
+//
+//        if (jdbcadapter.loadDriver(dbDriver, connURL, dbUser, dbPasswd) != true) {
+//            LogUtil.writeLog("loadDriver error,user:" + dbUser + " dbPasswd:" + dbPasswd);
+//            LogUtil.writeLog(jdbcadapter.getHint());
+//            return -1;
+//        }
+//
+//        String sSql = "ALTER SESSION SET NLS_DATE_FORMAT='YYYYMMDDHH24MISS'";
+//        jdbcadapter.executeUpdate(sSql);
 
         return 0;
     }

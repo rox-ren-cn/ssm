@@ -98,7 +98,7 @@ public class CmdBean {
     }
     private String s;
 
-    String getPackedMsg() {
+    public String getMsg() {
         return s;
     }
 }

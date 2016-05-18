@@ -51,6 +51,10 @@ public class JKeyTree2 extends JTree {
 		setCellRenderer(new KeyCellRenderer(getCellRenderer()));
 	}
 
+	public JKeyTree2() {
+		this(null);
+	}
+
 	/**
 	 * The TreeModel class puts hierarchical data in a form that the JTree can
 	 * display. This implementation interprets the containment hierarchy of a

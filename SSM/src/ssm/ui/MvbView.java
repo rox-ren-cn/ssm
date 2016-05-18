@@ -31,6 +31,7 @@ public class MvbView extends JFrame {
 
 	// the key admin menu
 	private JMenu keyAdmin;
+	private JMenu svcAdmin;
 
 	/*
 	 * Default constructor. Constructs the main window.
@@ -61,9 +62,10 @@ public class MvbView extends JFrame {
 
 		// Setup some other menus. You may be asked to add functionality
 		// to these menus in an assignment.
-		JMenu menu = new JMenu("Start Service");
-		menu.setMnemonic(KeyEvent.VK_D);
-		menuBar.add(menu);
+		svcAdmin = new JMenu("Start Service");
+		svcAdmin.setMnemonic(KeyEvent.VK_D);
+		svcAdmin.setActionCommand("Start Service");
+		menuBar.add(svcAdmin);
 
 		// the scrollpane for the status text field
 		JScrollPane statusScrPane = new JScrollPane(statusField);
@@ -101,16 +103,17 @@ public class MvbView extends JFrame {
 		keyAdmin.setMnemonic(KeyEvent.VK_B);
 
 		createMenuItem(keyAdmin, "Insert Key...", KeyEvent.VK_I, "Insert Key");
-
 		createMenuItem(keyAdmin, "Update Key Data...", KeyEvent.VK_U, "Update Key");
-
 		createMenuItem(keyAdmin, "Delete Key...", KeyEvent.VK_D, "Delete Key");
-
 		createMenuItem(keyAdmin, "Show All Keys", KeyEvent.VK_S, "Show Key")
 				.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_B, ActionEvent.CTRL_MASK));
 
 		// createMenuItem(keyAdmin, "Edit All Keys", KeyEvent.VK_E, "Edit Key");
-
+		createMenuItem(keyAdmin, "Init LMK", KeyEvent.VK_L, "Init LMK");
+		createMenuItem(keyAdmin, "Init TMK", KeyEvent.VK_T, "Init TMK");
+		createMenuItem(keyAdmin, "Input ZPK", KeyEvent.VK_Z, "Input ZPK");
+		createMenuItem(keyAdmin, "Input ATM Key", KeyEvent.VK_Z, "Input ATM Key");
+		
 		mb.add(keyAdmin);
 	}
 
@@ -199,6 +202,8 @@ public class MvbView extends JFrame {
 			menuItem = keyAdmin.getItem(i);
 			menuItem.addActionListener(kc);
 		}
+		svcAdmin.addActionListener(kc);
+		
 	}
 
 	public void showAllKeys() {

@@ -121,8 +121,8 @@ public class KeyModel2 {
 
 			ResultSet rs = ps.executeQuery();
 
-			KeyTree2 kt = BuildTree(rs);
-			return kt;
+			keyTree.BuildTree(rs);
+			return keyTree;
 		} catch (SQLException | KeyException ex) {
 			ExceptionEvent event = new ExceptionEvent(this, ex.getMessage());
 			fireExceptionGenerated(event);
@@ -132,28 +132,19 @@ public class KeyModel2 {
 
 	public KeyTree2 loadKeys() {
 		try {
+			keyTree = KeyTree2.getInstance();
 			ps = con.prepareStatement("SELECT k.* FROM `keys` k", ResultSet.TYPE_SCROLL_INSENSITIVE,
 					ResultSet.CONCUR_READ_ONLY);
 
 			ResultSet rs = ps.executeQuery();
 
-			keyTree = BuildTree(rs);
+			keyTree.BuildTree(rs);
 			return keyTree;
 		} catch (SQLException | KeyException ex) {
 			ExceptionEvent event = new ExceptionEvent(this, ex.getMessage());
 			fireExceptionGenerated(event);
 			return null;
 		}
-	}
-
-	public KeyTree2 BuildTree(ResultSet rs) throws SQLException, KeyException {
-		KeyTree2 kt = new KeyTree2();
-		while (rs.next()) {
-			KeyBean kb = new KeyBean(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4));
-			kt.addChild(kb);
-		}
-		kt.buildTree();
-		return kt;
 	}
 
 	public ResultSet editKey() {

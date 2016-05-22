@@ -1,20 +1,11 @@
 package ssm.ui;
 
-// File: MvbView.java
-
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-/*
- * MvbView allows a user to view and manipulate the branch table.
- * Additional functionality may be added in the future, such as
- * viewing and manipulating the driver, license, and exam tables.
- */
-public class MvbView extends JFrame {
-	/**
-	 * 
-	 */
+
+public class SSMView extends JFrame {
 	private static final long serialVersionUID = 1L;
 	// initial position of the main frame
 	private int framePositionX;
@@ -33,12 +24,9 @@ public class MvbView extends JFrame {
 	private JMenu keyAdmin;
 	private JMenu svcAdmin;
 
-	/*
-	 * Default constructor. Constructs the main window.
-	 */
-	public MvbView() {
+	public SSMView() {
 		// should call the constructor of the superclass first
-		super("Motor Vehicle Branch Administration");
+		super("SSM Administration");
 		setSize(650, 450);
 
 		// the content pane;
@@ -62,10 +50,7 @@ public class MvbView extends JFrame {
 
 		// Setup some other menus. You may be asked to add functionality
 		// to these menus in an assignment.
-		svcAdmin = new JMenu("Start Service");
-		svcAdmin.setMnemonic(KeyEvent.VK_D);
-		svcAdmin.setActionCommand("Start Service");
-		menuBar.add(svcAdmin);
+		setupServiceMenu(menuBar);
 
 		// the scrollpane for the status text field
 		JScrollPane statusScrPane = new JScrollPane(statusField);
@@ -117,56 +102,50 @@ public class MvbView extends JFrame {
 		mb.add(keyAdmin);
 	}
 
-	/*
-	 * Creates a menu item and adds it to the given menu. If the menu item has
-	 * no mnemonic, set mnemonicKey to a negative integer. If it has no action
-	 * command, set actionCommand to the empty string "". By setting the menu
-	 * item's action command, the event handler can determine which menu item
-	 * was selected by the user. This method returns the menu item.
-	 */
+	private void setupServiceMenu(JMenuBar mb) {
+		
+		// Setup some other menus. You may be asked to add functionality
+		// to these menus in an assignment.
+		svcAdmin = new JMenu("Service");
+		svcAdmin.setMnemonic(KeyEvent.VK_D);
+		svcAdmin.setActionCommand("Start Service");
+
+		// when alt-b is pressed on the keyboard, the menu will appear
+		svcAdmin.setMnemonic(KeyEvent.VK_S);
+
+		createMenuItem(svcAdmin, "Start Server", KeyEvent.VK_I, "Start Server");
+		createMenuItem(svcAdmin, "Stop Server", KeyEvent.VK_U, "Stop Server");
+		
+		mb.add(svcAdmin);
+	}
+
+
 	private JMenuItem createMenuItem(JMenu menu, String label, int mnemonicKey, String actionCommand) {
 		JMenuItem menuItem = new JMenuItem(label);
 
-		if (mnemonicKey > 0) {
+		if (mnemonicKey > 0)
 			menuItem.setMnemonic(mnemonicKey);
-		}
 
-		if (actionCommand.length() > 0) {
+		if (actionCommand.length() > 0)
 			menuItem.setActionCommand(actionCommand);
-		}
 
 		menu.add(menuItem);
 
 		return menuItem;
 	}
 
-	/*
-	 * Places the given window approximately at the center of the screen
-	 */
 	public void centerWindow(Window w) {
 		Rectangle winBounds = w.getBounds();
 		w.setLocation(framePositionX + (frameBounds.width - winBounds.width) / 2,
 				framePositionY + (frameBounds.height - winBounds.height) / 2);
 	}
 
-	/*
-	 * This method adds the given string to the status text area
-	 */
 	public void updateStatusBar(String s) {
-		// trim() removes whitespace and control characters at both ends of the
-		// string
 		statusField.append(s.trim() + "\n");
 
-		// This informs the scroll pane to update itself and its scroll bars.
-		// The scroll pane does not always automatically scroll to the message
-		// that was
-		// just added to the text area. This line guarantees that it does.
 		statusField.revalidate();
 	}
 
-	/*
-	 * This method adds the given JTable into tableScrPane
-	 */
 	public void addTable(JTable data) {
 		tableScrPane.setViewportView(data);
 	}
@@ -175,14 +154,6 @@ public class MvbView extends JFrame {
 		tableScrPane.setViewportView(data);
 	}
 
-	public void addTree(JKeyTree2 data) {
-		tableScrPane.setViewportView(data);
-	}
-
-	/*
-	 * This method registers the controllers for all items in each menu. This
-	 * method should only be executed once.
-	 */
 	public void registerControllers() {
 		JMenuItem menuItem;
 
@@ -192,18 +163,11 @@ public class MvbView extends JFrame {
 			menuItem = keyAdmin.getItem(i);
 			menuItem.addActionListener(kc);
 		}
-	}
-	public void registerControllers2() {
-		JMenuItem menuItem;
-
-		KeyController2 kc = new KeyController2(this);
-
-		for (int i = 0; i < keyAdmin.getItemCount(); i++) {
-			menuItem = keyAdmin.getItem(i);
+		for (int i = 0; i < svcAdmin.getItemCount(); i++) {
+			menuItem = svcAdmin.getItem(i);
 			menuItem.addActionListener(kc);
 		}
-		svcAdmin.addActionListener(kc);
-		
+
 	}
 
 	public void showAllKeys() {
@@ -214,45 +178,26 @@ public class MvbView extends JFrame {
 	}
 
 	public static void main(String[] args) {
-		MvbView mvb = new MvbView();
+		SSMView mvb = new SSMView();
 
-		// we will not call pack() on the main frame
-		// because the size set by setSize() will be ignored
 		mvb.setVisible(true);
-
-		// create the login window
 		LoginWindow lw = new LoginWindow(mvb);
-
 		lw.addWindowListener(new ControllerRegister(mvb));
-
-		// pack() has to be called before centerWindow()
-		// and setVisible()
 		lw.pack();
-
 		mvb.centerWindow(lw);
-		
 		lw.setVisible(true);
 	}
 }
 
-/*
- * Event handler for login window. After the user logs in (after login window
- * closes), the controllers that handle events on the menu items are created.
- * The controllers cannot be created before the user logs in because the
- * database connection is not valid at that time. The models that are created by
- * the controllers require a valid database connection.
- */
 class ControllerRegister extends WindowAdapter {
-	private MvbView mvb;
+	private SSMView mvb;
 
-	public ControllerRegister(MvbView mvb) {
+	public ControllerRegister(SSMView mvb) {
 		this.mvb = mvb;
 	}
 
 	public void windowClosed(WindowEvent e) {
-		mvb.registerControllers2();
-//		MvbView mv = (MvbView)this.getOwner();
+		mvb.registerControllers();
 		mvb.showAllKeys();
-
 	}
 }

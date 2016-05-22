@@ -5,20 +5,23 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.border.*;
 
+import ssm.SSMServer;
+import ssm.tools.LogUtil;
 import ssm.util.KeyBean;
+import ssm.util.KeyException;
 import ssm.util.KeyTree;
-
 import java.sql.*;
 
 public class KeyController implements ActionListener, ExceptionListener {
-	private MvbView mvb = null;
+	private SSMView mvb = null;
 	private KeyModel key = null;
+	private SSMServer server = null;
 
 	public static final int OPERATIONSUCCESS = 0;
 	public static final int OPERATIONFAILED = 1;
 	public static final int VALIDATIONERROR = 2;
 
-	public KeyController(MvbView mvb) {
+	public KeyController(SSMView mvb) {
 		this.mvb = mvb;
 		key = new KeyModel();
 
@@ -30,6 +33,38 @@ public class KeyController implements ActionListener, ExceptionListener {
 
 		if (actionCommand.equals("Insert Key")) {
 			KeyInsertDialog iDialog = new KeyInsertDialog(mvb);
+			iDialog.pack();
+			mvb.centerWindow(iDialog);
+			iDialog.setVisible(true);
+			return;
+		}
+
+		if (actionCommand.equals("Init LMK")) {
+			LMKInitDialog iDialog = new LMKInitDialog(mvb);
+			iDialog.pack();
+			mvb.centerWindow(iDialog);
+			iDialog.setVisible(true);
+			return;
+		}
+
+		if (actionCommand.equals("Input ZPK")) {
+			ZPKInputDialog iDialog = new ZPKInputDialog(mvb);
+			iDialog.pack();
+			mvb.centerWindow(iDialog);
+			iDialog.setVisible(true);
+			return;
+		}
+
+		if (actionCommand.equals("Input ATM Key")) {
+			ATMKeyInputDialog iDialog = new ATMKeyInputDialog(mvb);
+			iDialog.pack();
+			mvb.centerWindow(iDialog);
+			iDialog.setVisible(true);
+			return;
+		}
+
+		if (actionCommand.equals("Init TMK")) {
+			TMKInitDialog iDialog = new TMKInitDialog(mvb);
 			iDialog.pack();
 			mvb.centerWindow(iDialog);
 			iDialog.setVisible(true);
@@ -65,6 +100,35 @@ public class KeyController implements ActionListener, ExceptionListener {
 			initKeys();
 			return;
 		}
+		if (actionCommand.equals("Start Server")) {
+			StartService();
+			return;
+		}
+	}
+
+	void StartService() {
+		int iPort;
+
+		ssm.file.readPropertyFile rpf = new ssm.file.readPropertyFile();
+		String sPort = rpf.readProperty(SSMServer.CONFIGFILENAME, "ssm.port");
+		iPort = Integer.parseInt(sPort);
+		server = new SSMServer(iPort);
+
+		server.start();
+	}
+
+	void StopService() {
+		// if (Thread.currentThread().isInterrupted()) {
+		// cleanup
+		// }
+		if (server != null) {
+			server.terminate();
+			try {
+				server.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public void exceptionGenerated(ExceptionEvent ex) {
@@ -80,21 +144,10 @@ public class KeyController implements ActionListener, ExceptionListener {
 	}
 
 	private void showAllKeys() {
-		ResultSet rs = key.showKeys();
-		CustomTableModel model = new CustomTableModel(key.getConnection(), rs);
-		CustomTable data = new CustomTable(model);
+		KeyTree kt2 = key.showKeys(1);
+		kt2.addExceptionListener(this);
+		JKeyTree kt = new JKeyTree(kt2.getTree());
 
-		KeyTree v = key.showKeys(1);
-
-		JKeyTree kt = new JKeyTree(v);
-
-		// register to be notified of any exceptions that occur in the model and
-		// table
-		model.addExceptionListener(this);
-		data.addExceptionListener(this);
-
-		// Adds the table to the scrollpane.
-		// By default, a JTable does not have scroll bars.
 		mvb.addTree(kt);
 	}
 
@@ -114,14 +167,822 @@ public class KeyController implements ActionListener, ExceptionListener {
 	}
 
 	private void initKeys() {
-//		ResultSet rs = key.showKeys();
-
-		KeyTree v = key.showKeys(1);
-		JKeyTree kt = new JKeyTree(v);
+		KeyTree v = key.loadKeys();
+		JKeyTree kt = null;
+		if (v == null) {
+			kt = new JKeyTree();
+			Toolkit.getDefaultToolkit().beep();
+			JOptionPane.showMessageDialog(mvb, "LMK isn't initialized", "Error", JOptionPane.ERROR_MESSAGE);
+		} else {
+			kt = new JKeyTree(v.getTree());
+		}
 
 		// Adds the table to the scrollpane.
 		// By default, a JTable does not have scroll bars.
 		mvb.addTree(kt);
+	}
+
+	class LMKInitDialog extends JDialog implements ActionListener {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		private JTextField kid = makeTextField(8);
+		private JTextField typ = makeTextField(3);
+		private JTextField kev = makeTextField(32);
+		private JTextField kcv = makeTextField(6);
+
+		/*
+		 * Constructor. Creates the dialog's GUI.
+		 */
+		public LMKInitDialog(JFrame parent) {
+			super(parent, "Init LMK", true);
+			setResizable(false);
+
+			JPanel contentPane = new JPanel(new BorderLayout());
+			setContentPane(contentPane);
+			contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+			// this panel will contain the text field labels and the text
+			// fields.
+			JPanel inputPane = new JPanel();
+			inputPane.setBorder(BorderFactory.createCompoundBorder(new TitledBorder(new EtchedBorder(), "Key Fields"),
+					new EmptyBorder(5, 5, 5, 5)));
+
+			// add the text field labels and text fields to inputPane
+			// using the GridBag layout manager
+
+			GridBagLayout gb = new GridBagLayout();
+			GridBagConstraints c = new GridBagConstraints();
+			inputPane.setLayout(gb);
+
+			// create and place key id label
+			JLabel label = new JLabel("Key ID: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(0, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key id field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(0, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kid, c);
+			kid.setDocument(new LengthRestrictedDocument(8, 0));
+			kid.setEditable(false);
+			kid.setText("99999999");
+			inputPane.add(kid);
+
+			// create and place key name label
+			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key name field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(typ, c);
+			typ.setText("LMK");
+			typ.setEditable(false);
+			inputPane.add(typ);
+
+			// create and place key address label
+			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key address field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kev, c);
+			inputPane.add(kev);
+
+			// create and place key city label
+			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key city field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kcv, c);
+			inputPane.add(kcv);
+
+			// when the return key is pressed in the last field
+			// of this form, the action performed by the ok button
+			// is executed
+			kcv.addActionListener(this);
+			kcv.setActionCommand("OK");
+
+			// panel for the OK and cancel buttons
+			JPanel buttonPane = new JPanel();
+			buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
+			buttonPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 2));
+
+			JButton OKButton = new JButton("OK");
+			JButton cancelButton = new JButton("Cancel");
+			OKButton.addActionListener(this);
+			OKButton.setActionCommand("OK");
+			cancelButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					dispose();
+				}
+			});
+
+			// add the buttons to buttonPane
+			buttonPane.add(Box.createHorizontalGlue());
+			buttonPane.add(OKButton);
+			buttonPane.add(Box.createRigidArea(new Dimension(10, 0)));
+			buttonPane.add(cancelButton);
+
+			contentPane.add(inputPane, BorderLayout.CENTER);
+			contentPane.add(buttonPane, BorderLayout.SOUTH);
+
+			addWindowListener(new WindowAdapter() {
+				public void windowClosing(WindowEvent e) {
+					dispose();
+				}
+			});
+		}
+
+		/*
+		 * Event handler for the OK button in KeyInsertDialog
+		 */
+		public void actionPerformed(ActionEvent e) {
+			String actionCommand = e.getActionCommand();
+
+			if (actionCommand.equals("OK")) {
+				switch (validateInsert()) {
+				case OPERATIONSUCCESS:
+					dispose();
+					break;
+				case VALIDATIONERROR:
+					Toolkit.getDefaultToolkit().beep();
+					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				case OPERATIONFAILED:
+					Toolkit.getDefaultToolkit().beep();
+					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				}
+			}
+		}
+
+		/*
+		 * Validates the text fields in KeyInsertDialog and then calls
+		 * key.insertKey() if the fields are valid. Returns the operation
+		 * status, which is one of OPERATIONSUCCESS, OPERATIONFAILED,
+		 * VALIDATIONERROR.
+		 */
+		private int validateInsert() {
+			try {
+				String skid = kid.getText();
+				String styp = typ.getText();
+				String skev = kev.getText();
+				String skcv = kcv.getText();
+
+				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
+					// check for duplicates
+					if (key.findKey(skid, styp)) {
+						Toolkit.getDefaultToolkit().beep();
+						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						return OPERATIONFAILED;
+					}
+				} else {
+					return VALIDATIONERROR;
+				}
+
+				mvb.updateStatusBar("Inserting key...");
+
+				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					mvb.updateStatusBar("Operation successful.");
+					showAllKeys();
+					return OPERATIONSUCCESS;
+				} else {
+					Toolkit.getDefaultToolkit().beep();
+					mvb.updateStatusBar("Operation failed.");
+					return OPERATIONFAILED;
+				}
+			} catch (NumberFormatException ex) {
+				// this exception is thrown when a string
+				// cannot be converted to a number
+				return VALIDATIONERROR;
+			}
+		}
+	}
+
+	class TMKInitDialog extends JDialog implements ActionListener {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		private JTextField kid = makeTextField(8);
+		private JTextField typ = makeTextField(3);
+		private JTextField kev = makeTextField(32);
+		private JTextField kcv = makeTextField(6);
+
+		/*
+		 * Constructor. Creates the dialog's GUI.
+		 */
+		public TMKInitDialog(JFrame parent) {
+			super(parent, "Init TMK", true);
+			setResizable(false);
+
+			JPanel contentPane = new JPanel(new BorderLayout());
+			setContentPane(contentPane);
+			contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+			// this panel will contain the text field labels and the text
+			// fields.
+			JPanel inputPane = new JPanel();
+			inputPane.setBorder(BorderFactory.createCompoundBorder(new TitledBorder(new EtchedBorder(), "Key Fields"),
+					new EmptyBorder(5, 5, 5, 5)));
+
+			// add the text field labels and text fields to inputPane
+			// using the GridBag layout manager
+
+			GridBagLayout gb = new GridBagLayout();
+			GridBagConstraints c = new GridBagConstraints();
+			inputPane.setLayout(gb);
+
+			// create and place key id label
+			JLabel label = new JLabel("Key ID: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(0, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key id field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(0, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kid, c);
+			kid.setDocument(new LengthRestrictedDocument(8, 0));
+			kid.setEditable(false);
+			kid.setText("99999999");
+			inputPane.add(kid);
+
+			// create and place key name label
+			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key name field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(typ, c);
+			typ.setText("TMK");
+			typ.setEditable(false);
+			inputPane.add(typ);
+
+			// create and place key address label
+			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key address field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kev, c);
+			inputPane.add(kev);
+
+			// create and place key city label
+			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key city field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kcv, c);
+			inputPane.add(kcv);
+
+			// when the return key is pressed in the last field
+			// of this form, the action performed by the ok button
+			// is executed
+			kcv.addActionListener(this);
+			kcv.setActionCommand("OK");
+
+			// panel for the OK and cancel buttons
+			JPanel buttonPane = new JPanel();
+			buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
+			buttonPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 2));
+
+			JButton OKButton = new JButton("OK");
+			JButton cancelButton = new JButton("Cancel");
+			OKButton.addActionListener(this);
+			OKButton.setActionCommand("OK");
+			cancelButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					dispose();
+				}
+			});
+
+			// add the buttons to buttonPane
+			buttonPane.add(Box.createHorizontalGlue());
+			buttonPane.add(OKButton);
+			buttonPane.add(Box.createRigidArea(new Dimension(10, 0)));
+			buttonPane.add(cancelButton);
+
+			contentPane.add(inputPane, BorderLayout.CENTER);
+			contentPane.add(buttonPane, BorderLayout.SOUTH);
+
+			addWindowListener(new WindowAdapter() {
+				public void windowClosing(WindowEvent e) {
+					dispose();
+				}
+			});
+		}
+
+		/*
+		 * Event handler for the OK button in KeyInsertDialog
+		 */
+		public void actionPerformed(ActionEvent e) {
+			String actionCommand = e.getActionCommand();
+
+			if (actionCommand.equals("OK")) {
+				switch (validateInsert()) {
+				case OPERATIONSUCCESS:
+					dispose();
+					break;
+				case VALIDATIONERROR:
+					Toolkit.getDefaultToolkit().beep();
+					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				case OPERATIONFAILED:
+					Toolkit.getDefaultToolkit().beep();
+					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				}
+			}
+		}
+
+		/*
+		 * Validates the text fields in KeyInsertDialog and then calls
+		 * key.insertKey() if the fields are valid. Returns the operation
+		 * status, which is one of OPERATIONSUCCESS, OPERATIONFAILED,
+		 * VALIDATIONERROR.
+		 */
+		private int validateInsert() {
+			try {
+				String skid = kid.getText();
+				String styp = typ.getText();
+				String skev = kev.getText();
+				String skcv = kcv.getText();
+
+				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
+					// check for duplicates
+					if (key.findKey(skid, styp)) {
+						Toolkit.getDefaultToolkit().beep();
+						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						return OPERATIONFAILED;
+					}
+				} else {
+					return VALIDATIONERROR;
+				}
+
+				mvb.updateStatusBar("Inserting key...");
+
+				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					mvb.updateStatusBar("Operation successful.");
+					showAllKeys();
+					return OPERATIONSUCCESS;
+				} else {
+					Toolkit.getDefaultToolkit().beep();
+					mvb.updateStatusBar("Operation failed.");
+					return OPERATIONFAILED;
+				}
+			} catch (NumberFormatException ex) {
+				// this exception is thrown when a string
+				// cannot be converted to a number
+				return VALIDATIONERROR;
+			}
+		}
+	}
+
+	class ZPKInputDialog extends JDialog implements ActionListener {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		private JTextField kid = makeTextField(8);
+		private JTextField typ = makeTextField(3);
+		private JTextField kev = makeTextField(32);
+		private JTextField kcv = makeTextField(6);
+
+		/*
+		 * Constructor. Creates the dialog's GUI.
+		 */
+		public ZPKInputDialog(JFrame parent) {
+			super(parent, "Input ZPK", true);
+			setResizable(false);
+
+			JPanel contentPane = new JPanel(new BorderLayout());
+			setContentPane(contentPane);
+			contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+			// this panel will contain the text field labels and the text
+			// fields.
+			JPanel inputPane = new JPanel();
+			inputPane.setBorder(BorderFactory.createCompoundBorder(new TitledBorder(new EtchedBorder(), "Key Fields"),
+					new EmptyBorder(5, 5, 5, 5)));
+
+			// add the text field labels and text fields to inputPane
+			// using the GridBag layout manager
+
+			GridBagLayout gb = new GridBagLayout();
+			GridBagConstraints c = new GridBagConstraints();
+			inputPane.setLayout(gb);
+
+			// create and place key id label
+			JLabel label = new JLabel("Key ID: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(0, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key id field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(0, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kid, c);
+			kid.setDocument(new LengthRestrictedDocument(8, 0));
+			inputPane.add(kid);
+
+			// create and place key name label
+			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key name field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(typ, c);
+			typ.setText("ZPK");
+			typ.setEditable(false);
+			inputPane.add(typ);
+
+			// create and place key address label
+			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key address field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kev, c);
+			inputPane.add(kev);
+
+			// create and place key city label
+			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key city field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kcv, c);
+			inputPane.add(kcv);
+
+			// when the return key is pressed in the last field
+			// of this form, the action performed by the ok button
+			// is executed
+			kcv.addActionListener(this);
+			kcv.setActionCommand("OK");
+
+			// panel for the OK and cancel buttons
+			JPanel buttonPane = new JPanel();
+			buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
+			buttonPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 2));
+
+			JButton OKButton = new JButton("OK");
+			JButton cancelButton = new JButton("Cancel");
+			OKButton.addActionListener(this);
+			OKButton.setActionCommand("OK");
+			cancelButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					dispose();
+				}
+			});
+
+			// add the buttons to buttonPane
+			buttonPane.add(Box.createHorizontalGlue());
+			buttonPane.add(OKButton);
+			buttonPane.add(Box.createRigidArea(new Dimension(10, 0)));
+			buttonPane.add(cancelButton);
+
+			contentPane.add(inputPane, BorderLayout.CENTER);
+			contentPane.add(buttonPane, BorderLayout.SOUTH);
+
+			addWindowListener(new WindowAdapter() {
+				public void windowClosing(WindowEvent e) {
+					dispose();
+				}
+			});
+		}
+
+		/*
+		 * Event handler for the OK button in KeyInsertDialog
+		 */
+		public void actionPerformed(ActionEvent e) {
+			String actionCommand = e.getActionCommand();
+
+			if (actionCommand.equals("OK")) {
+				switch (validateInsert()) {
+				case OPERATIONSUCCESS:
+					dispose();
+					break;
+				case VALIDATIONERROR:
+					Toolkit.getDefaultToolkit().beep();
+					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				case OPERATIONFAILED:
+					Toolkit.getDefaultToolkit().beep();
+					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				}
+			}
+		}
+
+		/*
+		 * Validates the text fields in KeyInsertDialog and then calls
+		 * key.insertKey() if the fields are valid. Returns the operation
+		 * status, which is one of OPERATIONSUCCESS, OPERATIONFAILED,
+		 * VALIDATIONERROR.
+		 */
+		private int validateInsert() {
+			try {
+				String skid = kid.getText();
+				String styp = typ.getText();
+				String skev = kev.getText();
+				String skcv = kcv.getText();
+
+				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
+					// check for duplicates
+					if (key.findKey(skid, styp)) {
+						Toolkit.getDefaultToolkit().beep();
+						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						return OPERATIONFAILED;
+					}
+				} else {
+					return VALIDATIONERROR;
+				}
+
+				mvb.updateStatusBar("Inserting key...");
+
+				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					mvb.updateStatusBar("Operation successful.");
+					showAllKeys();
+					return OPERATIONSUCCESS;
+				} else {
+					Toolkit.getDefaultToolkit().beep();
+					mvb.updateStatusBar("Operation failed.");
+					return OPERATIONFAILED;
+				}
+			} catch (NumberFormatException ex) {
+				// this exception is thrown when a string
+				// cannot be converted to a number
+				return VALIDATIONERROR;
+			}
+		}
+	}
+
+	class ATMKeyInputDialog extends JDialog implements ActionListener {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		private JTextField kid = makeTextField(8);
+		String[] comboList = { "TMK", "TPK" };
+		private JComboBox<String> typ = new JComboBox<String>(comboList);
+		private JTextField kev = makeTextField(32);
+		private JTextField kcv = makeTextField(6);
+
+		/*
+		 * Constructor. Creates the dialog's GUI.
+		 */
+		public ATMKeyInputDialog(JFrame parent) {
+			super(parent, "Input ZPK", true);
+			setResizable(false);
+
+			JPanel contentPane = new JPanel(new BorderLayout());
+			setContentPane(contentPane);
+			contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+			// this panel will contain the text field labels and the text
+			// fields.
+			JPanel inputPane = new JPanel();
+			inputPane.setBorder(BorderFactory.createCompoundBorder(new TitledBorder(new EtchedBorder(), "Key Fields"),
+					new EmptyBorder(5, 5, 5, 5)));
+
+			// add the text field labels and text fields to inputPane
+			// using the GridBag layout manager
+
+			GridBagLayout gb = new GridBagLayout();
+			GridBagConstraints c = new GridBagConstraints();
+			inputPane.setLayout(gb);
+
+			// create and place key id label
+			JLabel label = new JLabel("Key ID: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(0, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key id field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(0, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kid, c);
+			kid.setDocument(new LengthRestrictedDocument(8, 0));
+			inputPane.add(kid);
+
+			// create and place key name label
+			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key name field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(typ, c);
+			inputPane.add(typ);
+
+			// create and place key address label
+			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key address field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kev, c);
+			inputPane.add(kev);
+
+			// create and place key city label
+			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key city field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kcv, c);
+			inputPane.add(kcv);
+
+			// when the return key is pressed in the last field
+			// of this form, the action performed by the ok button
+			// is executed
+			kcv.addActionListener(this);
+			kcv.setActionCommand("OK");
+
+			// panel for the OK and cancel buttons
+			JPanel buttonPane = new JPanel();
+			buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
+			buttonPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 2));
+
+			JButton OKButton = new JButton("OK");
+			JButton cancelButton = new JButton("Cancel");
+			OKButton.addActionListener(this);
+			OKButton.setActionCommand("OK");
+			cancelButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					dispose();
+				}
+			});
+
+			// add the buttons to buttonPane
+			buttonPane.add(Box.createHorizontalGlue());
+			buttonPane.add(OKButton);
+			buttonPane.add(Box.createRigidArea(new Dimension(10, 0)));
+			buttonPane.add(cancelButton);
+
+			contentPane.add(inputPane, BorderLayout.CENTER);
+			contentPane.add(buttonPane, BorderLayout.SOUTH);
+
+			addWindowListener(new WindowAdapter() {
+				public void windowClosing(WindowEvent e) {
+					dispose();
+				}
+			});
+		}
+
+		/*
+		 * Event handler for the OK button in KeyInsertDialog
+		 */
+		public void actionPerformed(ActionEvent e) {
+			String actionCommand = e.getActionCommand();
+
+			if (actionCommand.equals("OK")) {
+				switch (validateInsert()) {
+				case OPERATIONSUCCESS:
+					dispose();
+					break;
+				case VALIDATIONERROR:
+					Toolkit.getDefaultToolkit().beep();
+					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				case OPERATIONFAILED:
+					Toolkit.getDefaultToolkit().beep();
+					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				}
+			}
+		}
+
+		/*
+		 * Validates the text fields in KeyInsertDialog and then calls
+		 * key.insertKey() if the fields are valid. Returns the operation
+		 * status, which is one of OPERATIONSUCCESS, OPERATIONFAILED,
+		 * VALIDATIONERROR.
+		 */
+		private int validateInsert() {
+			try {
+				String skid = kid.getText();
+				String styp = typ.getSelectedItem().toString();
+				String skev = kev.getText();
+				String skcv = kcv.getText();
+
+				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
+					// check for duplicates
+					if (key.findKey(skid, styp)) {
+						Toolkit.getDefaultToolkit().beep();
+						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						return OPERATIONFAILED;
+					}
+				} else {
+					return VALIDATIONERROR;
+				}
+
+				mvb.updateStatusBar("Inserting key...");
+
+				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					mvb.updateStatusBar("Operation successful.");
+					showAllKeys();
+					return OPERATIONSUCCESS;
+				} else {
+					Toolkit.getDefaultToolkit().beep();
+					mvb.updateStatusBar("Operation failed.");
+					return OPERATIONFAILED;
+				}
+			} catch (NumberFormatException ex) {
+				// this exception is thrown when a string
+				// cannot be converted to a number
+				return VALIDATIONERROR;
+			}
+		}
 	}
 
 	/*
@@ -266,12 +1127,18 @@ public class KeyController implements ActionListener, ExceptionListener {
 			String actionCommand = e.getActionCommand();
 
 			if (actionCommand.equals("OK")) {
-				if (validateInsert() != VALIDATIONERROR) {
+				switch (validateInsert()) {
+				case OPERATIONSUCCESS:
 					dispose();
-				} else {
+					break;
+				case VALIDATIONERROR:
 					Toolkit.getDefaultToolkit().beep();
-
 					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				case OPERATIONFAILED:
+					Toolkit.getDefaultToolkit().beep();
+					JOptionPane.showMessageDialog(this, "Invalid Input", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
 				}
 			}
 		}
@@ -289,7 +1156,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 				String skev = kev.getText();
 				String skcv = kcv.getText();
 
-				if (kid.getText().trim().length() > 0 && typ.getText().trim().length() > 0) {
+				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
 					// check for duplicates
 					if (key.findKey(skid, styp)) {
 						Toolkit.getDefaultToolkit().beep();
@@ -470,6 +1337,10 @@ public class KeyController implements ActionListener, ExceptionListener {
 				}
 			} catch (NumberFormatException ex) {
 				return VALIDATIONERROR;
+			} catch (KeyException e) {
+				LogUtil.d("UpdateKey", e.getMessage());
+				e.printStackTrace();
+				return VALIDATIONERROR;
 			}
 		}
 	}
@@ -633,4 +1504,5 @@ public class KeyController implements ActionListener, ExceptionListener {
 		tf.setDocument(new LengthRestrictedDocument(len, mode));
 		return tf;
 	}
+
 }

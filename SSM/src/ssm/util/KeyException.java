@@ -4,7 +4,7 @@ public class KeyException extends Exception {
 
 	private static final long serialVersionUID = 1L;
 	
-	KeyException(String s) {
+	public KeyException(String s) {
 		super(s);
 	}
 }

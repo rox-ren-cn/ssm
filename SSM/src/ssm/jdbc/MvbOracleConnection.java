@@ -14,6 +14,7 @@ import java.sql.*;
 public class MvbOracleConnection {
 	private static MvbOracleConnection _mvb = null;
 	protected Connection con = null;
+	protected Connection con0 = null;
 	protected boolean driverLoaded = false;
 
 	/*
@@ -55,8 +56,10 @@ public class MvbOracleConnection {
 			}
 
 			con = DriverManager.getConnection(url, username, password);
-
 			con.setAutoCommit(false);
+
+			con0 = DriverManager.getConnection(url, username, password);
+			con0.setAutoCommit(false);
 
 			return true;
 		} catch (SQLException ex) {
@@ -71,11 +74,8 @@ public class MvbOracleConnection {
 		return con;
 	}
 
-	/*
-	 * Sets the connection
-	 */
-	public void setConnection(Connection connect) {
-		con = connect;
+	public Connection getConnection0() {
+		return con0;
 	}
 
 	/*

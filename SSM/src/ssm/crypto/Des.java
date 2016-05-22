@@ -8,6 +8,8 @@ import javax.crypto.spec.SecretKeySpec;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
@@ -123,10 +125,8 @@ public class Des {
 	}
 
 	public static byte[] GetPinBlock(String pan, String pin) {
-		// byte[] p1 = toBytes("0000" + String.format("%016s", pan).substring(3,
-		// 14));
-		// logic(logic_op.xor, p1, toBytes(String.format("%-16s", "0" + ('0' +
-		// pin.length()) + pin + "").replace(' ', 'F')));
+		// byte[] p1 = toBytes("0000" + String.format("%016s", pan).substring(3, 14));
+		// logic(logic_op.xor, p1, toBytes(String.format("%-16s", "0" + ('0' + pin.length()) + pin + "").replace(' ', 'F')));
 		// return p1;
 		return toBytes(String.format("%-16s", "0" + Integer.toString(pin.length()) + pin).replace(' ', 'F'));
 	}
@@ -135,7 +135,7 @@ public class Des {
 	public static byte[] toKey(String key) {
 		return toKey(toBytes(key));
 	}
-	
+
 	public static byte[] toKey(byte[] key) {
 		byte[] key3 = new byte[24];
 		System.arraycopy(key, 0, key3, 0, 16);
@@ -160,6 +160,7 @@ public class Des {
 		byte[] clearKey = des3(enc_op.dec, toKey(BDK), toBytes(key));
 		return toHexStr(des3(enc_op.enc, toKey(clearKey), toBytes(text)));
 	}
+
 	// Key is encrypted by Device Key (bdk)
 	public static String Dec0(String key, String text) {
 		byte[] clearKey = des3(enc_op.dec, toKey(BDK), toBytes(key));
@@ -167,23 +168,39 @@ public class Des {
 	}
 
 	// Key is encrypted by LMK
-	public static String Enc1(String lmk, String key, String text) {
-		byte[] clearLMK = des3(enc_op.dec, toKey(BDK), toBytes(lmk));
+	public static String Enc1(String key, String text) {
+		byte[] clearLMK = des3(enc_op.dec, toKey(BDK), toBytes(LMK));
 		byte[] clearKey = des3(enc_op.dec, toKey(clearLMK), toBytes(key));
 		return toHexStr(des3(enc_op.enc, toKey(clearKey), toBytes(text)));
 	}
 
 	// Key is encrypted by LMK
-	public static String Dec1(String lmk, String key, String text) {
-		byte[] clearLMK = des3(enc_op.dec, toKey(BDK), toBytes(lmk));
+	public static String Dec1(String key, String text) {
+		byte[] clearLMK = des3(enc_op.dec, toKey(BDK), toBytes(LMK));
 		byte[] clearKey = des3(enc_op.dec, toKey(clearLMK), toBytes(key));
 		return toHexStr(des3(enc_op.dec, toKey(clearKey), toBytes(text)));
+	}
+
+	// Key and text are encrypted by LMK
+	public static String Enc2(String key, String text) {
+		byte[] clearLMK = des3(enc_op.dec, toKey(BDK), toBytes(LMK));
+		byte[] clearKey = des3(enc_op.dec, toKey(clearLMK), toBytes(key));
+		byte[] clearTxt = des3(enc_op.dec, toKey(clearLMK), toBytes(text));
+		return toHexStr(des3(enc_op.enc, toKey(clearKey), clearTxt));
+	}
+
+	// Key and text are encrypted by LMK
+	public static String Dec2(String key, String text) {
+		byte[] clearLMK = des3(enc_op.dec, toKey(BDK), toBytes(LMK));
+		byte[] clearKey = des3(enc_op.dec, toKey(clearLMK), toBytes(key));
+		byte[] clearTxt = des3(enc_op.dec, toKey(clearLMK), toBytes(text));
+		return toHexStr(des3(enc_op.dec, toKey(clearKey), clearTxt));
 	}
 
 	public static String Enc(String text) {
 		byte[] x = toBytes(text);
 		byte[] lmk = des3(enc_op.dec, toKey(BDK), toBytes(LMK));
-		byte[] xx = des3(enc_op.enc, lmk, x);
+		byte[] xx = des3(enc_op.enc, toKey(lmk), x);
 		return toHexStr(xx);
 	}
 
@@ -199,12 +216,16 @@ public class Des {
 		return toHexStr(des3(enc_op.dec, toKey(key), toBytes(text)));
 	}
 
+	public static String randomKey() {
+		SecureRandom random = new SecureRandom();
+		byte bKey[] = new byte[16];
+		random.nextBytes(bKey);
+		return toHexStr(bKey);
+	}
+
 	private final static String BDK = "0123456789ABCDEFFEDCBA9876543210";
 	private static String LMK = null;
 
-	public static String getLMK() {
-		return LMK;
-	}
 
 	public static void setLMK(String lMK) {
 		LMK = lMK;

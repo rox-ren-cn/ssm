@@ -4,23 +4,25 @@ package ssm.ui;
 import java.sql.*;
 import javax.swing.event.EventListenerList;
 
-import ssm.crypto.Des;
-import ssm.jdbc.MvbOracleConnection;
+import ssm.util.Des;
 import ssm.util.KeyBean;
 import ssm.util.KeyTree;
+import ssm.util.MvbOracleConnection;
 import ssm.util.KeyException;
 
 public class KeyModel {
 	protected PreparedStatement ps = null;
 	protected EventListenerList listenerList = new EventListenerList();
 	protected Connection con = null;
-	// connection for server
-	protected Connection con0 = null;
 
 	protected static KeyTree keyTree;
 
 	public KeyModel() {
 		con = MvbOracleConnection.getInstance().getConnection();
+	}
+
+	public KeyModel(int i) {
+		con = MvbOracleConnection.getInstance().connect("", "");
 	}
 
 	public boolean insertKey(KeyBean clearKey) {
@@ -56,20 +58,16 @@ public class KeyModel {
 		}
 	}
 
-	public boolean updateKey(String kid, String typ, String kev, String kcv) throws KeyException {
+	public boolean updateKey(KeyBean clearKey) throws KeyException {
 		try {
-			KeyBean encryptedKey = keyTree.updateKey(new KeyBean(kid, typ, kev, kcv));
+			KeyBean encryptedKey = keyTree.updateKey(clearKey);
 			ps = con.prepareStatement("UPDATE `keys` SET `kev` = ?, `kcv` = ? WHERE `entityid` = ? and `keytype` = ?");
 
-			if (kev != null && kcv != null) {
-				ps.setString(1, encryptedKey.getKev());
-				ps.setString(2, encryptedKey.getKcv());
-			} else {
-				return false;
-			}
+			ps.setString(1, encryptedKey.getKev());
+			ps.setString(2, encryptedKey.getKcv());
 
-			ps.setString(3, kid);
-			ps.setString(4, typ);
+			ps.setString(3, clearKey.getKid());
+			ps.setString(4, clearKey.getTyp());
 
 			ps.executeUpdate();
 
@@ -92,6 +90,11 @@ public class KeyModel {
 	}
 
 	public boolean deleteKey(String entitiyid, String keytype) {
+		return deleteKey(entitiyid, keytype, true);
+	}
+
+	// No commit
+	public boolean deleteKey(String entitiyid, String keytype, boolean commit) {
 		try {
 			ps = con.prepareStatement("DELETE FROM `keys` WHERE `entityid` = ? and `keytype` = ?");
 
@@ -100,7 +103,8 @@ public class KeyModel {
 
 			ps.execute();
 
-			con.commit();
+			if (commit)
+				con.commit();
 
 			return true;
 		} catch (SQLException ex) {
@@ -108,7 +112,8 @@ public class KeyModel {
 			fireExceptionGenerated(event);
 
 			try {
-				con.rollback();
+				if (commit)
+					con.rollback();
 				return false;
 			} catch (SQLException ex2) {
 				event = new ExceptionEvent(this, ex2.getMessage());
@@ -216,10 +221,10 @@ public class KeyModel {
 		// Generate New Key, encrypted by TMK.INIT
 		// If ATM is already has a TMK, then delete it.
 		if (findKey(atmID, "TMK")) {
-			deleteKey(atmID, "TMK");
+			deleteKey(atmID, "TMK", false);
 		}
 		if (findKey(atmID, "TPK")) {
-			deleteKey(atmID, "TPK");
+			deleteKey(atmID, "TPK", false);
 		}
 
 		String newKey = Des.randomKey();
@@ -229,34 +234,53 @@ public class KeyModel {
 
 	public KeyBean ExchTMK(String atmID) throws KeyException {
 		// Generate New Key, encrypted by current TMK
-		// If ATM is already has a TMK, then delete it.
 		KeyBean currentTMK = getKey(atmID, "TMK");
-		if (findKey(atmID, "TMK")) {
-			deleteKey(atmID, "TMK");
-		} else {
+		if (currentTMK == null)
 			throw new KeyException("ATM TMK isn't inited");
-		}
 
 		String newKey = Des.randomKey();
 		KeyBean newTMK = new KeyBean(atmID, "TMK", newKey, Des.Enc(newKey, "0000000000000000").substring(0, 6));
-		updateKey(newTMK.getKcv(), newTMK.getTyp(), newTMK.getKev(), newTMK.getKcv());
-		
+		updateKey(newTMK);
+
 		return currentTMK;
 	}
 
 	public KeyBean ExchTPK(String atmID) throws KeyException {
 		// Generate New Key, encrypted by current TMK
-		// If ATM is already has a TPK, then delete it.
-		KeyBean currentTMK = getKey(atmID, "TPK");
-		if (findKey(atmID, "TPK")) {
-			deleteKey(atmID, "TPK");
-		}
-
+		KeyBean currentTMK = getKey(atmID, "TMK");
+		if (currentTMK == null)
+			throw new KeyException("ATM TMK isn't inited");
 		String newKey = Des.randomKey();
 		KeyBean newTMK = new KeyBean(atmID, "TPK", newKey, Des.Enc(newKey, "0000000000000000").substring(0, 6));
-		updateKey(newTMK.getKcv(), newTMK.getTyp(), newTMK.getKev(), newTMK.getKcv());
-		
+		if (findKey(atmID, "TPK"))
+			updateKey(newTMK);
+		else
+			insertKey(newTMK);
+
 		return currentTMK;
+	}
+
+	public String TransPIN(String atmID, String entityID, String PINBlock) throws KeyException {
+		// Generate New Key, encrypted by current TMK
+		KeyBean TPK = getKey(atmID, "TPK");
+		if (TPK == null)
+			throw new KeyException("ATM TPK doesn't exist");
+		KeyBean ZPK = getKey(entityID, "ZPK");
+		if (ZPK == null)
+			throw new KeyException("ATM TPK doesn't exist");
+
+		String clearPB = Des.Dec(Des.LMKDec(TPK.getKev()), PINBlock);
+		return Des.Enc(Des.LMKDec(ZPK.getKev()), clearPB);
+	}
+
+	public String GetClearPIN(String atmID, String PINBlock) throws KeyException {
+		// Generate New Key, encrypted by current TMK
+		KeyBean TPK = getKey(atmID, "TPK");
+		if (TPK == null)
+			throw new KeyException("ATM TPK doesn't exist");
+
+		String clearPB = Des.Dec(Des.LMKDec(TPK.getKev()), PINBlock);
+		return clearPB;
 	}
 
 	public Connection getConnection() {

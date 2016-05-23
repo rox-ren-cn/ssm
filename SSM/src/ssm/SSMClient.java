@@ -43,10 +43,13 @@ public class SSMClient {
 					case "4":
 						msg = "SSMTP123456788888888800000000000000000000000000000000";
 						break;
+					case "5":
+						msg = "SSMCP123456784392260020773618   00000000000000000000000000000000";
+						break;
 					default:
 						msg = "SSMIM12345678";
 					}
-					os.write(msg.getBytes(), 0, 13);
+					os.write(msg.getBytes(), 0, msg.length());
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}

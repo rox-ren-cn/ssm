@@ -7,12 +7,15 @@ import java.util.List;
 
 import javax.swing.event.EventListenerList;
 
-import ssm.crypto.Des;
-import ssm.tools.LogUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import ssm.ui.ExceptionListener;
 
 public class KeyTree {
 	private static KeyTree instance = null;
+
+	private Log log = LogFactory.getLog(KeyTree.class);
 
 	public static KeyTree getInstance() {
 		if (instance == null) {
@@ -54,11 +57,12 @@ public class KeyTree {
 	public void BuildTree(ResultSet rs) throws SQLException, KeyException {
 		// clear all before loading
 		ResetTree();
-		
+
 		while (rs.next()) {
 			KeyBean kb = new KeyBean(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4));
 			addChild(kb);
 		}
+
 		buildTree();
 	}
 
@@ -82,14 +86,14 @@ public class KeyTree {
 		if (kb.isLMK()) {
 			if (!isLMKInited) {
 				setLMK(kb);
-				LogUtil.d("KeyTree2", "LMK is loaded. " + kb.getKcv());
+				log.info("KeyTree2: LMK is loaded. " + kb.getKcv());
 			} else {
 				throw new KeyException("LMK can't be overwritten!");
 			}
 		} else if (kb.isTMK()) {
 			if (!isTMKInited) {
 				setTMK(kb);
-				LogUtil.d("KeyTree2", "TMK is loaded. " + kb.getKcv());
+				log.info("KeyTree2: TMK is loaded. " + kb.getKcv());
 			} else {
 				throw new KeyException("TMK can be init only once!");
 			}
@@ -115,9 +119,16 @@ public class KeyTree {
 	public void buildTree() throws KeyException {
 		if (!isLMKInited)
 			throw new KeyException("LMK isn't inited");
+
+		if (!Des.Enc(Des.BDKDec(LMK.getKev()), "0000000000000000").startsWith(LMK.getKcv()))
+			throw new KeyException("LMK KCV Error!");
+
 		root = new KeyTree3(LMK);
 
 		if (isTMKInited) {
+			if (!Des.Enc(Des.LMKDec(TMK.getKev()), "0000000000000000").startsWith(TMK.getKcv()))
+				throw new KeyException("TMK KCV Error!");
+
 			branchTMK = root.addChild(TMK);
 
 			TMK_ATM.forEach((x) -> branchTMK.addChild(x));
@@ -141,7 +152,7 @@ public class KeyTree {
 		KeyBean encryptedKey = null;
 		if (!isLMKInited) {
 			if (kb.isLMK())
-				encryptedKey = new KeyBean(kb.getKid(), kb.getTyp(), Des.EncLMK(kb.getKev()), kb.getKcv());
+				encryptedKey = new KeyBean(kb.getKid(), kb.getTyp(), Des.BDKEnc(kb.getKev()), kb.getKcv());
 			else
 				throw new KeyException("LMK isn't inited");
 		} else {
@@ -149,21 +160,21 @@ public class KeyTree {
 				throw new KeyException("TMK can't be overwritten!");
 			if (!isLMKInited && kb.isATM())
 				throw new KeyException("TMK isn't inited!");
-			encryptedKey = new KeyBean(kb.getKid(), kb.getTyp(), Des.Enc0(LMK.getKev(), kb.getKev()), kb.getKcv());
+			encryptedKey = new KeyBean(kb.getKid(), kb.getTyp(), Des.LMKEnc(kb.getKev()), kb.getKcv());
 		}
 
 		addChild(encryptedKey);
 		buildTree();
 		return encryptedKey;
 	}
-	
+
 	public KeyBean updateKey(KeyBean kb) throws KeyException {
 		// kb is clear key
 		checkKcv(kb.getKev(), kb.getKcv());
 		KeyBean encryptedKey = null;
 		if (!isLMKInited) {
 			if (kb.isLMK())
-				encryptedKey = new KeyBean(kb.getKid(), kb.getTyp(), Des.EncLMK(kb.getKev()), kb.getKcv());
+				encryptedKey = new KeyBean(kb.getKid(), kb.getTyp(), Des.BDKEnc(kb.getKev()), kb.getKcv());
 			else
 				throw new KeyException("LMK isn't inited");
 		} else {
@@ -171,7 +182,7 @@ public class KeyTree {
 				throw new KeyException("TMK can't be overwritten!");
 			if (!isLMKInited && kb.isATM())
 				throw new KeyException("TMK isn't inited!");
-			encryptedKey = new KeyBean(kb.getKid(), kb.getTyp(), Des.Enc0(LMK.getKev(), kb.getKev()), kb.getKcv());
+			encryptedKey = new KeyBean(kb.getKid(), kb.getTyp(), Des.LMKEnc(kb.getKev()), kb.getKcv());
 		}
 
 		addChild(encryptedKey);
@@ -180,7 +191,7 @@ public class KeyTree {
 	}
 
 	public void deleteKey() {
-		
+
 	}
 
 	public void InitTMK(String atmID) {

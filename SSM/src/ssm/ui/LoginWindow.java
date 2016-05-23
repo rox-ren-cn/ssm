@@ -4,7 +4,7 @@ package ssm.ui;
 
 import javax.swing.*;
 
-import ssm.jdbc.MvbOracleConnection;
+import ssm.util.MvbOracleConnection;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -110,7 +110,7 @@ public class LoginWindow extends JDialog implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		// if (mvb.connect(usernameField.getText(),
 		// String.valueOf(passwordField.getPassword()))) {
-		if (mvb.connect("ssm", "1234")) {
+		if (mvb.connect()) {
 			// if the username and password are valid,
 			// get rid of the login window
 			dispose();

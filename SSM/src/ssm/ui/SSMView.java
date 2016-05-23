@@ -2,11 +2,21 @@ package ssm.ui;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import javax.swing.*;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 
 public class SSMView extends JFrame {
 	private static final long serialVersionUID = 1L;
+
+	private static final Log log = LogFactory.getLog(SSMView.class);
+	
 	// initial position of the main frame
 	private int framePositionX;
 	private int framePositionY;
@@ -79,7 +89,13 @@ public class SSMView extends JFrame {
 				System.exit(0);
 			}
 		});
+		log.debug("?");
 	}
+
+	public JMenuItem miInitLMK = null;
+	public JMenuItem miInitTMK = null;
+	public JMenuItem miInputZPK = null;
+	public JMenuItem miOutputZPK = null;
 
 	private void setupKeyAdminMenu(JMenuBar mb) {
 		keyAdmin = new JMenu("Key Admin");
@@ -87,21 +103,24 @@ public class SSMView extends JFrame {
 		// when alt-b is pressed on the keyboard, the menu will appear
 		keyAdmin.setMnemonic(KeyEvent.VK_B);
 
-		createMenuItem(keyAdmin, "Insert Key...", KeyEvent.VK_I, "Insert Key");
-		createMenuItem(keyAdmin, "Update Key Data...", KeyEvent.VK_U, "Update Key");
-		createMenuItem(keyAdmin, "Delete Key...", KeyEvent.VK_D, "Delete Key");
+//		createMenuItem(keyAdmin, "Insert Key...", KeyEvent.VK_I, "Insert Key");
+//		createMenuItem(keyAdmin, "Update Key Data...", KeyEvent.VK_U, "Update Key");
+//		createMenuItem(keyAdmin, "Delete Key...", KeyEvent.VK_D, "Delete Key");
 		createMenuItem(keyAdmin, "Show All Keys", KeyEvent.VK_S, "Show Key")
 				.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_B, ActionEvent.CTRL_MASK));
 
 		// createMenuItem(keyAdmin, "Edit All Keys", KeyEvent.VK_E, "Edit Key");
-		createMenuItem(keyAdmin, "Init LMK", KeyEvent.VK_L, "Init LMK");
-		createMenuItem(keyAdmin, "Init TMK", KeyEvent.VK_T, "Init TMK");
-		createMenuItem(keyAdmin, "Input ZPK", KeyEvent.VK_Z, "Input ZPK");
-		createMenuItem(keyAdmin, "Input ATM Key", KeyEvent.VK_Z, "Input ATM Key");
+		miInitLMK = createMenuItem(keyAdmin, "Init LMK", KeyEvent.VK_L, "Init LMK");
+		miInitTMK = createMenuItem(keyAdmin, "Init TMK", KeyEvent.VK_T, "Init TMK");
+		miInputZPK = createMenuItem(keyAdmin, "Input ZPK", KeyEvent.VK_Z, "Input ZPK");
+		miOutputZPK = createMenuItem(keyAdmin, "Output ZPK", KeyEvent.VK_Y, "Output ZPK");
+//		createMenuItem(keyAdmin, "Input ATM Key", KeyEvent.VK_Z, "Input ATM Key");
 		
 		mb.add(keyAdmin);
 	}
 
+	public JMenuItem menuItemStartService = null;
+	public JMenuItem menuItemStopService = null;
 	private void setupServiceMenu(JMenuBar mb) {
 		
 		// Setup some other menus. You may be asked to add functionality
@@ -113,12 +132,13 @@ public class SSMView extends JFrame {
 		// when alt-b is pressed on the keyboard, the menu will appear
 		svcAdmin.setMnemonic(KeyEvent.VK_S);
 
-		createMenuItem(svcAdmin, "Start Server", KeyEvent.VK_I, "Start Server");
-		createMenuItem(svcAdmin, "Stop Server", KeyEvent.VK_U, "Stop Server");
+		menuItemStartService = createMenuItem(svcAdmin, "Start Server", KeyEvent.VK_I, "Start Server");
+		menuItemStopService = createMenuItem(svcAdmin, "Stop Server", KeyEvent.VK_U, "Stop Server");
+
+		menuItemStopService.setEnabled(false);
 		
 		mb.add(svcAdmin);
 	}
-
 
 	private JMenuItem createMenuItem(JMenu menu, String label, int mnemonicKey, String actionCommand) {
 		JMenuItem menuItem = new JMenuItem(label);
@@ -177,9 +197,19 @@ public class SSMView extends JFrame {
 		}
 	}
 
+	public static Properties prop = new Properties();
 	public static void main(String[] args) {
-		SSMView mvb = new SSMView();
 
+		ClassLoader loader = Thread.currentThread().getContextClassLoader();           
+		InputStream stream = loader.getResourceAsStream("config/ssm.properties");
+		try {
+			prop.load(stream);
+		} catch (IOException e) {
+			log.debug("ssm.properties doesn't exist");
+		}
+
+		SSMView mvb = new SSMView();
+	
 		mvb.setVisible(true);
 		LoginWindow lw = new LoginWindow(mvb);
 		lw.addWindowListener(new ControllerRegister(mvb));

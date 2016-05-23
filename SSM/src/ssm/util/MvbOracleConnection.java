@@ -1,8 +1,14 @@
-package ssm.jdbc;
+package ssm.util;
 
 // File: MvbOracleConnection.java
 
 import java.sql.*;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import ssm.SSMServer;
+import ssm.ui.SSMView;
 
 /*
  * This class is a singleton class that provides methods 
@@ -13,8 +19,10 @@ import java.sql.*;
  */
 public class MvbOracleConnection {
 	private static MvbOracleConnection _mvb = null;
+	
+	private static final Log log = LogFactory.getLog(SSMServer.class);
+	
 	protected Connection con = null;
-	protected Connection con0 = null;
 	protected boolean driverLoaded = false;
 
 	/*
@@ -36,34 +44,47 @@ public class MvbOracleConnection {
 		return _mvb;
 	}
 
+	public boolean connect() {
+		con = connect("", "");
+		if (con == null)
+			return false;
+
+		return true;
+	}
+
 	/*
 	 * Loads the Oracle JDBC driver and connects to the database named ug using
 	 * the given username and password. Returns true if the connection is
 	 * successful; false otherwise.
 	 */
-	public boolean connect(String username, String password) {
+	public Connection connect(String username, String password) {
 		try {
 			// change the url if the branch table is located somewhere else
-			String url = "jdbc:oracle:thin:@129.184.13.100:1521:bank";
-			url = "jdbc:mysql://localhost:3306/ssm";
+			String url = SSMView.prop.getProperty("ssm.jdbsURL");
+			String driver = SSMView.prop.getProperty("ssm.jdbcDriver");
+			String user = SSMView.prop.getProperty("ssm.dbUsername");
+			String passwd = SSMView.prop.getProperty("ssm.dbPassword");
 
 			if (!driverLoaded) {
+				try {
+					Class.forName(driver);
+				} catch (ClassNotFoundException e) {
+					log.debug("Load db driver: " + driver + " fail. " + e.getMessage());
+					return null;
+				}
 //				DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
 //				driverLoaded = true;
-				DriverManager.registerDriver(new com.mysql.jdbc.Driver());
+//				DriverManager.registerDriver(new com.mysql.jdbc.Driver());
 				driverLoaded = true;
-				
 			}
 
-			con = DriverManager.getConnection(url, username, password);
-			con.setAutoCommit(false);
+			Connection conn = DriverManager.getConnection(url, user, passwd);
+			conn.setAutoCommit(false);
 
-			con0 = DriverManager.getConnection(url, username, password);
-			con0.setAutoCommit(false);
-
-			return true;
+			return conn;
 		} catch (SQLException ex) {
-			return false;
+			log.debug("Connect DB:" + ex.getMessage());
+			return null;
 		}
 	}
 
@@ -72,17 +93,6 @@ public class MvbOracleConnection {
 	 */
 	public Connection getConnection() {
 		return con;
-	}
-
-	public Connection getConnection0() {
-		return con0;
-	}
-
-	/*
-	 * Returns true if the driver is loaded; false otherwise
-	 */
-	public boolean isDriverLoaded() {
-		return driverLoaded;
 	}
 
 	/*

@@ -14,6 +14,8 @@ package ssm.ui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JFrame;
@@ -152,9 +154,10 @@ public class JKeyTree extends JTree {
 		// Compute the string to display, and pass it to the wrapped renderer
 		public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded,
 				boolean leaf, int row, boolean hasFocus) {
-			KeyBean kb = ((KeyTree3)value).getKey();
-			String newvalue = kb.getTyp() + " - " + kb.getKid() + " : " + kb.getKcv(); // Component type
-			
+			KeyBean kb = ((KeyTree3) value).getKey();
+			String newvalue = kb.getTyp() + " - " + kb.getKid() + " : " + kb.getKcv(); // Component
+																						// type
+
 			// Use the wrapped renderer object to do the real work
 			return renderer.getTreeCellRendererComponent(tree, newvalue, selected, expanded, leaf, row, hasFocus);
 		}
@@ -200,17 +203,24 @@ public class JKeyTree extends JTree {
 		// the tree selection state changes.
 		tree.addTreeSelectionListener(new TreeSelectionListener() {
 			public void valueChanged(TreeSelectionEvent e) {
-				// Tree selections are referred to by "path"
-				// We only care about the last node in the path
-//				TreePath path = e.getPath();
-//				KeyTree3 c = (KeyTree3) path.getLastPathComponent();
+				TreePath path = e.getPath();
+				KeyTree3 c = (KeyTree3) path.getLastPathComponent();
 
-//				KeyBean kb = c.getKey();
-//				msgline.setText("KID: " + kb.getKid() + "  TYPE: " + kb.getTyp() + "  KCV: " + kb.getKcv());
+				KeyBean kb = c.getKey();
+				msgline.setText("KID: " + kb.getKid() + "  TYPE: " + kb.getTyp() + "  KCV: " + kb.getKcv());
 
 			}
 		});
-
+		tree.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent me) {
+				if (me.getClickCount() > 1) {
+					TreePath path = tree.getPathForLocation(me.getX(), me.getY());
+					KeyTree3 c = (KeyTree3) path.getLastPathComponent();
+					KeyBean kb = c.getKey();
+					msgline.setText("KID: " + kb.getKid() + "  TYPE: " + kb.getTyp() + "  KCV: " + kb.getKcv());
+				}
+			}
+		});
 		// Now that we've set up the tree, add it to the scrollpane
 		scrollpane.setViewportView(tree);
 

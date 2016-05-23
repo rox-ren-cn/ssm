@@ -1,7 +1,5 @@
 package ssm.util;
 
-import ssm.crypto.Des;
-
 public class KeyBean {
 	private String kid;
 	private String typ;
@@ -22,9 +20,9 @@ public class KeyBean {
 	public KeyBean Secure() {
 		if (kev != null)
 			if (isLMK())
-				setKev(Des.EncLMK(kev));
+				setKev(Des.BDKEnc(kev));
 			else
-				setKev(Des.Enc(kev));
+				setKev(Des.LMKEnc(kev));
 		return this;
 	}
 

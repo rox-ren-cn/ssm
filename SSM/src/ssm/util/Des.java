@@ -1,10 +1,11 @@
-package ssm.crypto;
-
-import ssm.tools.LogUtil;
+package ssm.util;
 
 import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -16,13 +17,15 @@ import javax.crypto.NoSuchPaddingException;
 
 public class Des {
 
+	private static final Log log = LogFactory.getLog(Des.class);
 	static {
 		hexArray = "0123456789ABCDEF".toCharArray();
 		try {
 			cdes = Cipher.getInstance("DES/ECB/NoPadding");
 			c3des = Cipher.getInstance("DESede/ECB/NoPadding");
 		} catch (final NoSuchAlgorithmException | NoSuchPaddingException ex) {
-			throw new RuntimeException("Failed to init DUKT", ex);
+			log.debug("Failed to init Des module");
+			throw new RuntimeException("Failed to init Des module", ex);
 		}
 	}
 
@@ -101,7 +104,7 @@ public class Des {
 			}
 			return cdes.doFinal(data);
 		} catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
-			LogUtil.d(e.getLocalizedMessage(), e.getMessage());
+			log.debug("des error:" + e.getMessage());
 		}
 		return null;
 	}
@@ -119,16 +122,30 @@ public class Des {
 			}
 			return c3des.doFinal(data);
 		} catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
-			LogUtil.d(e.getLocalizedMessage(), e.getMessage());
+			log.debug("des3 error:" + e.getMessage());
 		}
 		return null;
 	}
 
 	public static byte[] GetPinBlock(String pan, String pin) {
-		// byte[] p1 = toBytes("0000" + String.format("%016s", pan).substring(3, 14));
-		// logic(logic_op.xor, p1, toBytes(String.format("%-16s", "0" + ('0' + pin.length()) + pin + "").replace(' ', 'F')));
+		// byte[] p1 = toBytes("0000" + String.format("%016s", pan).substring(3,
+		// 14));
+		// logic(logic_op.xor, p1, toBytes(String.format("%-16s", "0" + ('0' +
+		// pin.length()) + pin + "").replace(' ', 'F')));
 		// return p1;
 		return toBytes(String.format("%-16s", "0" + Integer.toString(pin.length()) + pin).replace(' ', 'F'));
+	}
+
+	public static String GetPin(String pan, String pinblock) throws KeyException {
+		String a = pan.trim();
+		String b = String.format("%19s", a);
+		String c = b.replace(' ', '0');
+		String s = c.substring(6, 18);
+		byte[] pc = toBytes("0000" + s);
+		logic(logic_op.xor, pc, pinblock.getBytes());
+		if (pc[1] < 4 || pc[1] > 12)
+			throw new KeyException("Invalid PIN Block");
+		return new String(pc, 2, pc[1]);
 	}
 
 	// Convert double length key to triple length key for DESede spec
@@ -143,42 +160,20 @@ public class Des {
 		return key3;
 	}
 
-	public static String EncLMK(String lmk) {
-		byte[] x = toBytes(lmk);
-		byte[] xx = des3(enc_op.enc, toKey(BDK), x);
-		LMK = toHexStr(xx);
-		LMK += LMK.substring(0, 16);
-		return LMK.substring(0, 32);
+	public static String BDKEnc(String lmk) {
+		return toHexStr(des3(enc_op.enc, toKey(BDK), toBytes(lmk)));
 	}
 
-	public static String DecLMK(String lmk) {
+	public static String BDKDec(String lmk) {
 		return toHexStr(des3(enc_op.dec, toKey(BDK), toBytes(lmk)));
 	}
 
-	// Key is encrypted by Device Key (bdk)
-	public static String Enc0(String key, String text) {
-		byte[] clearKey = des3(enc_op.dec, toKey(BDK), toBytes(key));
-		return toHexStr(des3(enc_op.enc, toKey(clearKey), toBytes(text)));
+	public static String LMKEnc(String lmk) {
+		return toHexStr(des3(enc_op.enc, toKey(BDKDec(LMK)), toBytes(lmk)));
 	}
 
-	// Key is encrypted by Device Key (bdk)
-	public static String Dec0(String key, String text) {
-		byte[] clearKey = des3(enc_op.dec, toKey(BDK), toBytes(key));
-		return toHexStr(des3(enc_op.dec, toKey(clearKey), toBytes(text)));
-	}
-
-	// Key is encrypted by LMK
-	public static String Enc1(String key, String text) {
-		byte[] clearLMK = des3(enc_op.dec, toKey(BDK), toBytes(LMK));
-		byte[] clearKey = des3(enc_op.dec, toKey(clearLMK), toBytes(key));
-		return toHexStr(des3(enc_op.enc, toKey(clearKey), toBytes(text)));
-	}
-
-	// Key is encrypted by LMK
-	public static String Dec1(String key, String text) {
-		byte[] clearLMK = des3(enc_op.dec, toKey(BDK), toBytes(LMK));
-		byte[] clearKey = des3(enc_op.dec, toKey(clearLMK), toBytes(key));
-		return toHexStr(des3(enc_op.dec, toKey(clearKey), toBytes(text)));
+	public static String LMKDec(String lmk) {
+		return toHexStr(des3(enc_op.dec, toKey(BDKDec(LMK)), toBytes(lmk)));
 	}
 
 	// Key and text are encrypted by LMK
@@ -195,17 +190,6 @@ public class Des {
 		byte[] clearKey = des3(enc_op.dec, toKey(clearLMK), toBytes(key));
 		byte[] clearTxt = des3(enc_op.dec, toKey(clearLMK), toBytes(text));
 		return toHexStr(des3(enc_op.dec, toKey(clearKey), clearTxt));
-	}
-
-	public static String Enc(String text) {
-		byte[] x = toBytes(text);
-		byte[] lmk = des3(enc_op.dec, toKey(BDK), toBytes(LMK));
-		byte[] xx = des3(enc_op.enc, toKey(lmk), x);
-		return toHexStr(xx);
-	}
-
-	public static String Dec(String text) {
-		return toHexStr(des3(enc_op.dec, des3(enc_op.dec, toBytes(BDK), toBytes(LMK)), toBytes(text)));
 	}
 
 	public static String Enc(String key, String text) {
@@ -225,7 +209,6 @@ public class Des {
 
 	private final static String BDK = "0123456789ABCDEFFEDCBA9876543210";
 	private static String LMK = null;
-
 
 	public static void setLMK(String lMK) {
 		LMK = lMK;

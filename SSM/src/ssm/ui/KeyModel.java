@@ -4,13 +4,18 @@ package ssm.ui;
 import java.sql.*;
 import javax.swing.event.EventListenerList;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import ssm.util.Des;
 import ssm.util.KeyBean;
 import ssm.util.KeyTree;
-import ssm.util.MvbOracleConnection;
+import ssm.util.JDBCConnection;
 import ssm.util.KeyException;
 
 public class KeyModel {
+	private static final Log log = LogFactory.getLog(KeyModel.class);
+
 	protected PreparedStatement ps = null;
 	protected EventListenerList listenerList = new EventListenerList();
 	protected Connection con = null;
@@ -18,11 +23,11 @@ public class KeyModel {
 	protected static KeyTree keyTree;
 
 	public KeyModel() {
-		con = MvbOracleConnection.getInstance().getConnection();
+		con = JDBCConnection.getInstance().getConnection();
 	}
 
 	public KeyModel(int i) {
-		con = MvbOracleConnection.getInstance().connect("", "");
+		con = JDBCConnection.getInstance().connect("", "");
 	}
 
 	public boolean insertKey(KeyBean clearKey) {
@@ -166,9 +171,7 @@ public class KeyModel {
 			return rs;
 		} catch (SQLException ex) {
 			ExceptionEvent event = new ExceptionEvent(this, ex.getMessage());
-			fireExceptionGenerated(event); // no need to commit or rollback
-											// since it is only a query
-
+			fireExceptionGenerated(event);
 			return null;
 		}
 	}
@@ -210,8 +213,7 @@ public class KeyModel {
 				return null;
 			}
 		} catch (SQLException ex) {
-			ExceptionEvent event = new ExceptionEvent(this, ex.getMessage());
-			fireExceptionGenerated(event);
+			fireExceptionGenerated(new ExceptionEvent(this, ex.getMessage()));
 
 			return null;
 		}
@@ -221,22 +223,34 @@ public class KeyModel {
 		// Generate New Key, encrypted by TMK.INIT
 		// If ATM is already has a TMK, then delete it.
 		if (findKey(atmID, "TMK")) {
-			deleteKey(atmID, "TMK", false);
+			if (!deleteKey(atmID, "TMK", false)) {
+				log.debug("Delete existing TMK failed");
+				fireExceptionGenerated(new ExceptionEvent(this, "Delete existing TMK failed"));
+			}
+				
 		}
 		if (findKey(atmID, "TPK")) {
-			deleteKey(atmID, "TPK", false);
+			if (!deleteKey(atmID, "TPK", false)) {
+				log.debug("Delete existing TPK failed");
+				fireExceptionGenerated(new ExceptionEvent(this, "Delete existing TPK failed"));
+			}
 		}
 
 		String newKey = Des.randomKey();
 		KeyBean kb = new KeyBean(atmID, "TMK", newKey, Des.Enc(newKey, "0000000000000000").substring(0, 6));
-		insertKey(kb);
+		if (!insertKey(kb)) {
+			log.debug("InitTMK failed");
+		}
 	}
 
 	public KeyBean ExchTMK(String atmID) throws KeyException {
 		// Generate New Key, encrypted by current TMK
 		KeyBean currentTMK = getKey(atmID, "TMK");
-		if (currentTMK == null)
+		if (currentTMK == null) {
+			log.debug("ATM TMK isn't inited");
+			fireExceptionGenerated(new ExceptionEvent(this, "ATM TMK isn't inited"));
 			throw new KeyException("ATM TMK isn't inited");
+		}
 
 		String newKey = Des.randomKey();
 		KeyBean newTMK = new KeyBean(atmID, "TMK", newKey, Des.Enc(newKey, "0000000000000000").substring(0, 6));

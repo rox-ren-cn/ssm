@@ -1,16 +1,5 @@
 package ssm.ui;
 
-/*
- * Copyright (c) 2004 David Flanagan.  All rights reserved.
- * This code is from the book Java Examples in a Nutshell, 3nd Edition.
- * It is provided AS-IS, WITHOUT ANY WARRANTY either expressed or implied.
- * You may study, use, and modify it for any non-commercial purpose,
- * including teaching and use in open-source projects.
- * You may distribute it non-commercially as long as you retain this notice.
- * For a commercial use license, or to purchase the book, 
- * please visit http://www.davidflanagan.com/javaexamples3.
- */
-
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Font;
@@ -22,116 +11,34 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
-import javax.swing.event.TreeModelListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 import ssm.util.KeyBean;
-import ssm.util.KeyTree3;
+import ssm.util.KeyTreeModel;
 
 /**
  * This class is a JTree subclass that displays the tree of AWT or Swing
  * component that make up a GUI.
  */
 public class JKeyTree extends JTree {
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 1L;
 
 	/**
 	 * All this constructor method has to do is set the TreeModel and
-	 * TreeCellRenderer objects for the tree. It is these classes (defined
-	 * below) that do all the real work.
+	 * TreeCellRenderer objects for the tree. 
 	 */
-	public JKeyTree(KeyTree3 kt) {
-		super(new KeyTreeModel(kt));
+	public JKeyTree(KeyTreeModel kt) {
+		super(kt);
 		setCellRenderer(new KeyCellRenderer(getCellRenderer()));
 	}
 
 	public JKeyTree() {
 		this(null);
-	}
-
-	/**
-	 * The TreeModel class puts hierarchical data in a form that the JTree can
-	 * display. This implementation interprets the containment hierarchy of a
-	 * Component for display by the ComponentTree class. Note that any kind of
-	 * Object can be a node in the tree, as long as the TreeModel knows how to
-	 * handle it.
-	 */
-	static class KeyTreeModel implements TreeModel {
-		KeyTree3 root; // The root object of the tree
-
-		// Constructor: just remember the root object
-		public KeyTreeModel(KeyTree3 kt) {
-			this.root = kt;
-		}
-
-		// Return the root of the tree
-		public Object getRoot() {
-			return root;
-		}
-
-		// Is this node a leaf? (Leaf nodes are displayed differently by JTree)
-		// Any node that isn't a container is a leaf, since they cannot have
-		// children. We also define containers with no children as leaves.
-		public boolean isLeaf(Object node) {
-			if (!(node instanceof KeyTree3))
-				return true;
-			KeyTree3 c = (KeyTree3) node;
-			return c.isLeaf();
-		}
-
-		// How many children does this node have?
-		public int getChildCount(Object node) {
-			if (node instanceof KeyTree3) {
-				KeyTree3 c = (KeyTree3) node;
-				return c.getChildCount();
-			}
-			return 0;
-		}
-
-		// Return the specified child of a parent node.
-		public Object getChild(Object parent, int index) {
-			if (parent instanceof KeyTree3) {
-				KeyTree3 c = (KeyTree3) parent;
-				return c.getChild(index);
-			}
-			return root.getChild(index);
-		}
-
-		// Return the index of the child node in the parent node
-		public int getIndexOfChild(Object parent, Object child) {
-			if (!(parent instanceof KeyTree3))
-				return -1;
-			KeyTree3 c = (KeyTree3) parent;
-			KeyTree3[] children = c.getChildren();
-			if (children == null)
-				return -1;
-			for (int i = 0; i < children.length; i++) {
-				if (children[i] == child)
-					return i;
-			}
-			return -1;
-		}
-
-		// This method is only required for editable trees, so it is not
-		// implemented here.
-		public void valueForPathChanged(TreePath path, Object newvalue) {
-		}
-
-		// This TreeModel never fires any events (since it is not editable)
-		// so event listener registration methods are left unimplemented
-		public void addTreeModelListener(TreeModelListener l) {
-		}
-
-		public void removeTreeModelListener(TreeModelListener l) {
-		}
 	}
 
 	/**
@@ -154,7 +61,7 @@ public class JKeyTree extends JTree {
 		// Compute the string to display, and pass it to the wrapped renderer
 		public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded,
 				boolean leaf, int row, boolean hasFocus) {
-			KeyBean kb = ((KeyTree3) value).getKey();
+			KeyBean kb = ((KeyTreeModel) value).getKey();
 			String newvalue = kb.getTyp() + " - " + kb.getKid() + " : " + kb.getKcv(); // Component
 																						// type
 
@@ -187,7 +94,7 @@ public class JKeyTree extends JTree {
 
 		// Now create the ComponentTree object, specifying the frame as the
 		// component whose tree is to be displayed. Also set the tree's font.
-		KeyTree3 root = new KeyTree3(new KeyBean("99999999", "LMK", "abcdef9876543210", "D679A3"));
+		KeyTreeModel root = new KeyTreeModel(new KeyBean("99999999", "LMK", "abcdef9876543210", "D679A3"));
 		root.addChild(new KeyBean("99999999", "TMK", "abcdef9876543210", "D679A3"));
 		root.addChild(new KeyBean("12345678", "TMK", "abcdef9876543210", "D679A3"));
 		root.addChild(new KeyBean("12345678", "TPK", "abcdef9876543210", "D679A3"));
@@ -204,7 +111,7 @@ public class JKeyTree extends JTree {
 		tree.addTreeSelectionListener(new TreeSelectionListener() {
 			public void valueChanged(TreeSelectionEvent e) {
 				TreePath path = e.getPath();
-				KeyTree3 c = (KeyTree3) path.getLastPathComponent();
+				KeyTreeModel c = (KeyTreeModel) path.getLastPathComponent();
 
 				KeyBean kb = c.getKey();
 				msgline.setText("KID: " + kb.getKid() + "  TYPE: " + kb.getTyp() + "  KCV: " + kb.getKcv());
@@ -215,7 +122,7 @@ public class JKeyTree extends JTree {
 			public void mouseClicked(MouseEvent me) {
 				if (me.getClickCount() > 1) {
 					TreePath path = tree.getPathForLocation(me.getX(), me.getY());
-					KeyTree3 c = (KeyTree3) path.getLastPathComponent();
+					KeyTreeModel c = (KeyTreeModel) path.getLastPathComponent();
 					KeyBean kb = c.getKey();
 					msgline.setText("KID: " + kb.getKid() + "  TYPE: " + kb.getTyp() + "  KCV: " + kb.getKcv());
 				}

@@ -17,8 +17,8 @@ import ssm.ui.SSMView;
  * JDBC driver has been loaded. To obtain a reference to an
  * instance of this class, use the getInstance() method.
  */
-public class MvbOracleConnection {
-	private static MvbOracleConnection _mvb = null;
+public class JDBCConnection {
+	private static JDBCConnection _mvb = null;
 	
 	private static final Log log = LogFactory.getLog(SSMServer.class);
 	
@@ -29,16 +29,16 @@ public class MvbOracleConnection {
 	 * The constructor is declared protected so that only subclasses can access
 	 * it.
 	 */
-	protected MvbOracleConnection() {
+	protected JDBCConnection() {
 		// empty
 	}
 
 	/*
 	 * Returns an instance of MvbOracleConnection
 	 */
-	public static MvbOracleConnection getInstance() {
+	public static JDBCConnection getInstance() {
 		if (_mvb == null) {
-			_mvb = new MvbOracleConnection();
+			_mvb = new JDBCConnection();
 		}
 
 		return _mvb;

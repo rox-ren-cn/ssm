@@ -1,8 +1,8 @@
 package ssm.util;
 
-public class BadCmdException extends Exception {
+public class CmdException extends Exception {
 
-	public BadCmdException(String string) {
+	public CmdException(String string) {
 		super(string);
 	}
 

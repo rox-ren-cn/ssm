@@ -10,16 +10,15 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import ssm.SSMServer;
+import ssm.util.Des;
 import ssm.util.KeyBean;
 import ssm.util.KeyException;
 import ssm.util.KeyTree;
-import ssm.util.KeyTree3;
-
-import java.sql.*;
+import ssm.util.KeyTreeModel;
 
 public class KeyController implements ActionListener, ExceptionListener {
-	private SSMView mvb = null;
-	private KeyModel key = null;
+	private SSMView view = null;
+	private KeyModel model = null;
 	private SSMServer server = null;
 
 	private Log log = LogFactory.getLog(KeyController.class);
@@ -28,76 +27,76 @@ public class KeyController implements ActionListener, ExceptionListener {
 	public static final int OPERATIONFAILED = 1;
 	public static final int VALIDATIONERROR = 2;
 
-	public KeyController(SSMView mvb) {
-		this.mvb = mvb;
-		key = new KeyModel();
+	public KeyController(SSMView view) {
+		this.view = view;
+		model = new KeyModel();
 
-		key.addExceptionListener(this);
+		model.addExceptionListener(this);
 	}
 
 	public void actionPerformed(ActionEvent e) {
 		String actionCommand = e.getActionCommand();
 
 		if (actionCommand.equals("Insert Key")) {
-			KeyInsertDialog iDialog = new KeyInsertDialog(mvb);
+			KeyInsertDialog iDialog = new KeyInsertDialog(view);
 			iDialog.pack();
-			mvb.centerWindow(iDialog);
+			view.centerWindow(iDialog);
 			iDialog.setVisible(true);
 			return;
 		}
 
 		if (actionCommand.equals("Init LMK")) {
-			LMKInitDialog iDialog = new LMKInitDialog(mvb);
+			LMKInitDialog iDialog = new LMKInitDialog(view);
 			iDialog.pack();
-			mvb.centerWindow(iDialog);
+			view.centerWindow(iDialog);
 			iDialog.setVisible(true);
 			return;
 		}
 
 		if (actionCommand.equals("Input ZPK")) {
-			ZPKInputDialog iDialog = new ZPKInputDialog(mvb);
+			ZPKInputDialog iDialog = new ZPKInputDialog(view);
 			iDialog.pack();
-			mvb.centerWindow(iDialog);
+			view.centerWindow(iDialog);
 			iDialog.setVisible(true);
 			return;
 		}
 
 		if (actionCommand.equals("Output ZPK")) {
-			ZPKOutputDialog iDialog = new ZPKOutputDialog(mvb);
+			ZPKOutputDialog iDialog = new ZPKOutputDialog(view);
 			iDialog.pack();
-			mvb.centerWindow(iDialog);
+			view.centerWindow(iDialog);
 			iDialog.setVisible(true);
 			return;
 		}
 
 		if (actionCommand.equals("Input ATM Key")) {
-			ATMKeyInputDialog iDialog = new ATMKeyInputDialog(mvb);
+			ATMKeyInputDialog iDialog = new ATMKeyInputDialog(view);
 			iDialog.pack();
-			mvb.centerWindow(iDialog);
+			view.centerWindow(iDialog);
 			iDialog.setVisible(true);
 			return;
 		}
 
 		if (actionCommand.equals("Init TMK")) {
-			TMKInitDialog iDialog = new TMKInitDialog(mvb);
+			TMKInitDialog iDialog = new TMKInitDialog(view);
 			iDialog.pack();
-			mvb.centerWindow(iDialog);
+			view.centerWindow(iDialog);
 			iDialog.setVisible(true);
 			return;
 		}
 
 		if (actionCommand.equals("Update Key")) {
-			KeyUpdateDialog uDialog = new KeyUpdateDialog(mvb);
+			KeyUpdateDialog uDialog = new KeyUpdateDialog(view);
 			uDialog.pack();
-			mvb.centerWindow(uDialog);
+			view.centerWindow(uDialog);
 			uDialog.setVisible(true);
 			return;
 		}
 
 		if (actionCommand.equals("Delete Key")) {
-			KeyDeleteDialog dDialog = new KeyDeleteDialog(mvb);
+			KeyDeleteDialog dDialog = new KeyDeleteDialog(view);
 			dDialog.pack();
-			mvb.centerWindow(dDialog);
+			view.centerWindow(dDialog);
 			dDialog.setVisible(true);
 			return;
 		}
@@ -107,30 +106,28 @@ public class KeyController implements ActionListener, ExceptionListener {
 			return;
 		}
 
-		if (actionCommand.equals("Edit Key")) {
-			editAllKeys();
-			return;
-		}
 		if (actionCommand.equals("Init Key")) {
 			initKeys();
 			return;
 		}
 		if (actionCommand.equals("Start Server")) {
 			StartService();
-			mvb.menuItemStartService.setEnabled(false);
-			mvb.menuItemStopService.setEnabled(true);
+			view.menuItemStartService.setEnabled(false);
+			view.menuItemStopService.setEnabled(true);
 			return;
 		}
 		if (actionCommand.equals("Stop Server")) {
 			StopService();
-			mvb.menuItemStartService.setEnabled(true);
-			mvb.menuItemStopService.setEnabled(false);
+			view.menuItemStartService.setEnabled(true);
+			view.menuItemStopService.setEnabled(false);
 			return;
 		}
 	}
 
 	void StartService() {
-		new SSMServer(Integer.parseInt(SSMView.prop.getProperty("ssm.port"))).start();
+		server = new SSMServer(Integer.parseInt(SSMView.prop.getProperty("ssm.port")));
+		server.addExceptionListener(this);
+		server.start();
 	}
 
 	void StopService() {
@@ -151,52 +148,44 @@ public class KeyController implements ActionListener, ExceptionListener {
 		Toolkit.getDefaultToolkit().beep();
 
 		if (message != null) {
-			mvb.updateStatusBar(ex.getMessage());
+			view.updateStatusBar(ex.getMessage());
 		} else {
-			mvb.updateStatusBar("An exception occurred!");
+			view.updateStatusBar("An exception occurred!");
 		}
 	}
 
 	private void showAllKeys() {
-		KeyTree kt2 = key.showKeys(1);
+		KeyTree kt2 = model.showKeys(1);
 		kt2.addExceptionListener(this);
 		JKeyTree kt = new JKeyTree(kt2.getTree());
 
-		mvb.addTree(kt);
-	}
-
-	/*
-	 * This method displays all branches in an editable JTable
-	 */
-	private void editAllKeys() {
-		ResultSet rs = key.editKey();
-
-		CustomTableModel model = new CustomTableModel(key.getConnection(), rs);
-		CustomTable data = new CustomTable(model);
-
-		model.addExceptionListener(this);
-		data.addExceptionListener(this);
-
-		mvb.addTable(data);
+		view.addTree(kt);
 	}
 
 	private void initKeys() {
-		KeyTree v = key.loadKeys();
+		KeyTree v = model.loadKeys();
 		JKeyTree kt = null;
 		if (v == null) {
 			kt = new JKeyTree();
 			Toolkit.getDefaultToolkit().beep();
-			JOptionPane.showMessageDialog(mvb, "LMK isn't initialized", "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(view, "LMK isn't initialized", "Warning", JOptionPane.WARNING_MESSAGE);
 		} else {
 			kt = new JKeyTree(v.getTree());
+
 		}
+		if (v == null || !v.isLMKInited)
+			view.setMenuLevel(0);
+		else if (!v.isTMKInited)
+			view.setMenuLevel(1);
+		else
+			view.setMenuLevel(2);
 
 		final JKeyTree tree = kt;
 		tree.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent me) {
 				if (me.getClickCount() > 1) {
 					TreePath path = tree.getPathForLocation(me.getX(), me.getY());
-					KeyTree3 c = (KeyTree3) path.getLastPathComponent();
+					KeyTreeModel c = (KeyTreeModel) path.getLastPathComponent();
 					KeyBean kb = c.getKey();
 					JOptionPane.showMessageDialog(null, "KEV: " + kb.getKev() + "  KCV: " + kb.getKcv(),
 							"KID: " + kb.getKid() + "  TYPE: " + kb.getTyp(), JOptionPane.INFORMATION_MESSAGE);
@@ -206,22 +195,17 @@ public class KeyController implements ActionListener, ExceptionListener {
 
 		// Adds the table to the scrollpane.
 		// By default, a JTable does not have scroll bars.
-		mvb.addTree(kt);
+		view.addTree(kt);
 	}
 
 	class LMKInitDialog extends JDialog implements ActionListener {
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = 1L;
 		private JTextField kid = makeTextField(8);
 		private JTextField typ = makeTextField(3);
-		private JTextField kev = makeTextField(32);
+		private JTextField kev_p1 = makeTextField(32);
+		private JTextField kev_p2 = makeTextField(32);
 		private JTextField kcv = makeTextField(6);
 
-		/*
-		 * Constructor. Creates the dialog's GUI.
-		 */
 		public LMKInitDialog(JFrame parent) {
 			super(parent, "Init LMK", true);
 			setResizable(false);
@@ -230,14 +214,9 @@ public class KeyController implements ActionListener, ExceptionListener {
 			setContentPane(contentPane);
 			contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-			// this panel will contain the text field labels and the text
-			// fields.
 			JPanel inputPane = new JPanel();
 			inputPane.setBorder(BorderFactory.createCompoundBorder(new TitledBorder(new EtchedBorder(), "Key Fields"),
 					new EmptyBorder(5, 5, 5, 5)));
-
-			// add the text field labels and text fields to inputPane
-			// using the GridBag layout manager
 
 			GridBagLayout gb = new GridBagLayout();
 			GridBagConstraints c = new GridBagConstraints();
@@ -261,7 +240,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			kid.setText("99999999");
 			inputPane.add(kid);
 
-			// create and place key name label
+			// create and place key type label
 			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -269,7 +248,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key name field
+			// place key type field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -278,22 +257,37 @@ public class KeyController implements ActionListener, ExceptionListener {
 			typ.setEditable(false);
 			inputPane.add(typ);
 
-			// create and place key address label
-			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
+			// create and place key value label
+			label = new JLabel("Key Part1: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
 			c.anchor = GridBagConstraints.EAST;
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key address field
+			// place key value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
-			gb.setConstraints(kev, c);
-			inputPane.add(kev);
+			gb.setConstraints(kev_p1, c);
+			inputPane.add(kev_p1);
 
-			// create and place key city label
+			// create and place key value label
+			label = new JLabel("Key Part2: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key value field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kev_p2, c);
+			inputPane.add(kev_p2);
+
+			// create and place key check value label
 			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -301,16 +295,15 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key city field
+			// place key check value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
 			gb.setConstraints(kcv, c);
 			inputPane.add(kcv);
 
-			// when the return key is pressed in the last field
-			// of this form, the action performed by the ok button
-			// is executed
+			// when the return key is pressed in the last field of this form,
+			// the action performed by the ok button is executed
 			kcv.addActionListener(this);
 			kcv.setActionCommand("OK");
 
@@ -323,6 +316,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			JButton cancelButton = new JButton("Cancel");
 			OKButton.addActionListener(this);
 			OKButton.setActionCommand("OK");
+
 			cancelButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					dispose();
@@ -378,29 +372,30 @@ public class KeyController implements ActionListener, ExceptionListener {
 			try {
 				String skid = kid.getText();
 				String styp = typ.getText();
-				String skev = kev.getText();
+				String skev = Des.logic(Des.logic_op.xor, kev_p1.getText(), kev_p2.getText());
 				String skcv = kcv.getText();
 
 				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
 					// check for duplicates
-					if (key.findKey(skid, styp)) {
+					if (model.findKey(skid, styp)) {
 						Toolkit.getDefaultToolkit().beep();
-						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						view.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
 						return OPERATIONFAILED;
 					}
 				} else {
 					return VALIDATIONERROR;
 				}
 
-				mvb.updateStatusBar("Inserting key...");
+				view.updateStatusBar("Inserting key...");
 
-				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
-					mvb.updateStatusBar("Operation successful.");
+				if (model.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					view.updateStatusBar("Operation successful.");
+					view.setMenuLevel(1);
 					showAllKeys();
 					return OPERATIONSUCCESS;
 				} else {
 					Toolkit.getDefaultToolkit().beep();
-					mvb.updateStatusBar("Operation failed.");
+					view.updateStatusBar("Operation failed.");
 					return OPERATIONFAILED;
 				}
 			} catch (NumberFormatException ex) {
@@ -412,13 +407,11 @@ public class KeyController implements ActionListener, ExceptionListener {
 	}
 
 	class TMKInitDialog extends JDialog implements ActionListener {
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = 1L;
 		private JTextField kid = makeTextField(8);
 		private JTextField typ = makeTextField(3);
-		private JTextField kev = makeTextField(32);
+		private JTextField kev_p1 = makeTextField(32);
+		private JTextField kev_p2 = makeTextField(32);
 		private JTextField kcv = makeTextField(6);
 
 		/*
@@ -463,7 +456,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			kid.setText("99999999");
 			inputPane.add(kid);
 
-			// create and place key name label
+			// create and place key type label
 			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -471,7 +464,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key name field
+			// place key type field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -480,22 +473,37 @@ public class KeyController implements ActionListener, ExceptionListener {
 			typ.setEditable(false);
 			inputPane.add(typ);
 
-			// create and place key address label
-			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
+			// create and place key value label
+			label = new JLabel("Key Part1: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
 			c.anchor = GridBagConstraints.EAST;
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key address field
+			// place key value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
-			gb.setConstraints(kev, c);
-			inputPane.add(kev);
+			gb.setConstraints(kev_p1, c);
+			inputPane.add(kev_p1);
 
-			// create and place key city label
+			// create and place key value label
+			label = new JLabel("Key Part2: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key value field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kev_p2, c);
+			inputPane.add(kev_p2);
+
+			// create and place key check value label
 			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -503,7 +511,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key city field
+			// place key check value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -580,43 +588,39 @@ public class KeyController implements ActionListener, ExceptionListener {
 			try {
 				String skid = kid.getText();
 				String styp = typ.getText();
-				String skev = kev.getText();
+				String skev = Des.logic(Des.logic_op.xor, kev_p1.getText(), kev_p2.getText());
 				String skcv = kcv.getText();
 
 				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
 					// check for duplicates
-					if (key.findKey(skid, styp)) {
+					if (model.findKey(skid, styp)) {
 						Toolkit.getDefaultToolkit().beep();
-						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						view.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
 						return OPERATIONFAILED;
 					}
 				} else {
 					return VALIDATIONERROR;
 				}
 
-				mvb.updateStatusBar("Inserting key...");
+				view.updateStatusBar("Inserting key...");
 
-				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
-					mvb.updateStatusBar("Operation successful.");
+				if (model.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					view.updateStatusBar("Operation successful.");
+					view.setMenuLevel(2);
 					showAllKeys();
 					return OPERATIONSUCCESS;
 				} else {
 					Toolkit.getDefaultToolkit().beep();
-					mvb.updateStatusBar("Operation failed.");
+					view.updateStatusBar("Operation failed.");
 					return OPERATIONFAILED;
 				}
 			} catch (NumberFormatException ex) {
-				// this exception is thrown when a string
-				// cannot be converted to a number
 				return VALIDATIONERROR;
 			}
 		}
 	}
 
 	class ZPKInputDialog extends JDialog implements ActionListener {
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = 1L;
 		private JTextField kid = makeTextField(8);
 		private JTextField typ = makeTextField(3);
@@ -663,7 +667,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			kid.setDocument(new LengthRestrictedDocument(8, 0));
 			inputPane.add(kid);
 
-			// create and place key name label
+			// create and place key type label
 			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -671,7 +675,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key name field
+			// place key type field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -680,7 +684,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			typ.setEditable(false);
 			inputPane.add(typ);
 
-			// create and place key address label
+			// create and place key value label
 			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -688,14 +692,14 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key address field
+			// place key value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
 			gb.setConstraints(kev, c);
 			inputPane.add(kev);
 
-			// create and place key city label
+			// create and place key check value label
 			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -703,7 +707,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key city field
+			// place key check value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -785,24 +789,24 @@ public class KeyController implements ActionListener, ExceptionListener {
 
 				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
 					// check for duplicates
-					if (key.findKey(skid, styp)) {
+					if (model.findKey(skid, styp)) {
 						Toolkit.getDefaultToolkit().beep();
-						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						view.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
 						return OPERATIONFAILED;
 					}
 				} else {
 					return VALIDATIONERROR;
 				}
 
-				mvb.updateStatusBar("Inserting key...");
+				view.updateStatusBar("Inserting key...");
 
-				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
-					mvb.updateStatusBar("Operation successful.");
+				if (model.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					view.updateStatusBar("Operation successful.");
 					showAllKeys();
 					return OPERATIONSUCCESS;
 				} else {
 					Toolkit.getDefaultToolkit().beep();
-					mvb.updateStatusBar("Operation failed.");
+					view.updateStatusBar("Operation failed.");
 					return OPERATIONFAILED;
 				}
 			} catch (NumberFormatException ex) {
@@ -814,9 +818,6 @@ public class KeyController implements ActionListener, ExceptionListener {
 	}
 
 	class ZPKOutputDialog extends JDialog implements ActionListener {
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = 1L;
 		private JTextField kid = makeTextField(8);
 		private JTextField typ = makeTextField(3);
@@ -863,7 +864,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			kid.setDocument(new LengthRestrictedDocument(8, 0));
 			inputPane.add(kid);
 
-			// create and place key name label
+			// create and place key type label
 			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -871,7 +872,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key name field
+			// place key type field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -880,7 +881,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			typ.setEditable(false);
 			inputPane.add(typ);
 
-			// create and place key address label
+			// create and place key value label
 			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -888,14 +889,14 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key address field
+			// place key value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
 			gb.setConstraints(kev, c);
 			inputPane.add(kev);
 
-			// create and place key city label
+			// create and place key check value label
 			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -903,7 +904,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key city field
+			// place key check value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -985,24 +986,24 @@ public class KeyController implements ActionListener, ExceptionListener {
 
 				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
 					// check for duplicates
-					if (key.findKey(skid, styp)) {
+					if (model.findKey(skid, styp)) {
 						Toolkit.getDefaultToolkit().beep();
-						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						view.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
 						return OPERATIONFAILED;
 					}
 				} else {
 					return VALIDATIONERROR;
 				}
 
-				mvb.updateStatusBar("Inserting key...");
+				view.updateStatusBar("Inserting key...");
 
-				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
-					mvb.updateStatusBar("Operation successful.");
+				if (model.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					view.updateStatusBar("Operation successful.");
 					showAllKeys();
 					return OPERATIONSUCCESS;
 				} else {
 					Toolkit.getDefaultToolkit().beep();
-					mvb.updateStatusBar("Operation failed.");
+					view.updateStatusBar("Operation failed.");
 					return OPERATIONFAILED;
 				}
 			} catch (NumberFormatException ex) {
@@ -1014,9 +1015,6 @@ public class KeyController implements ActionListener, ExceptionListener {
 	}
 
 	class ATMKeyInputDialog extends JDialog implements ActionListener {
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = 1L;
 		private JTextField kid = makeTextField(8);
 		String[] comboList = { "TMK", "TPK" };
@@ -1064,7 +1062,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			kid.setDocument(new LengthRestrictedDocument(8, 0));
 			inputPane.add(kid);
 
-			// create and place key name label
+			// create and place key type label
 			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -1072,14 +1070,14 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key name field
+			// place key type field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
 			gb.setConstraints(typ, c);
 			inputPane.add(typ);
 
-			// create and place key address label
+			// create and place key value label
 			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -1087,14 +1085,14 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key address field
+			// place key value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
 			gb.setConstraints(kev, c);
 			inputPane.add(kev);
 
-			// create and place key city label
+			// create and place key check value label
 			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -1102,7 +1100,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key city field
+			// place key check value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -1184,24 +1182,24 @@ public class KeyController implements ActionListener, ExceptionListener {
 
 				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
 					// check for duplicates
-					if (key.findKey(skid, styp)) {
+					if (model.findKey(skid, styp)) {
 						Toolkit.getDefaultToolkit().beep();
-						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						view.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
 						return OPERATIONFAILED;
 					}
 				} else {
 					return VALIDATIONERROR;
 				}
 
-				mvb.updateStatusBar("Inserting key...");
+				view.updateStatusBar("Inserting key...");
 
-				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
-					mvb.updateStatusBar("Operation successful.");
+				if (model.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					view.updateStatusBar("Operation successful.");
 					showAllKeys();
 					return OPERATIONSUCCESS;
 				} else {
 					Toolkit.getDefaultToolkit().beep();
-					mvb.updateStatusBar("Operation failed.");
+					view.updateStatusBar("Operation failed.");
 					return OPERATIONFAILED;
 				}
 			} catch (NumberFormatException ex) {
@@ -1216,9 +1214,6 @@ public class KeyController implements ActionListener, ExceptionListener {
 	 * This class creates a dialog box for inserting a key.
 	 */
 	class KeyInsertDialog extends JDialog implements ActionListener {
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = 1L;
 		private JTextField kid = makeTextField(8);
 		private JTextField typ = makeTextField(3);
@@ -1265,7 +1260,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			kid.setDocument(new LengthRestrictedDocument(8, 0));
 			inputPane.add(kid);
 
-			// create and place key name label
+			// create and place key type label
 			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -1273,14 +1268,14 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key name field
+			// place key type field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
 			gb.setConstraints(typ, c);
 			inputPane.add(typ);
 
-			// create and place key address label
+			// create and place key value label
 			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -1288,14 +1283,14 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key address field
+			// place key value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
 			gb.setConstraints(kev, c);
 			inputPane.add(kev);
 
-			// create and place key city label
+			// create and place key check value label
 			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -1303,7 +1298,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key city field
+			// place key check value field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -1385,24 +1380,24 @@ public class KeyController implements ActionListener, ExceptionListener {
 
 				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
 					// check for duplicates
-					if (key.findKey(skid, styp)) {
+					if (model.findKey(skid, styp)) {
 						Toolkit.getDefaultToolkit().beep();
-						mvb.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
+						view.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
 						return OPERATIONFAILED;
 					}
 				} else {
 					return VALIDATIONERROR;
 				}
 
-				mvb.updateStatusBar("Inserting key...");
+				view.updateStatusBar("Inserting key...");
 
-				if (key.insertKey(new KeyBean(skid, styp, skev, skcv))) {
-					mvb.updateStatusBar("Operation successful.");
+				if (model.insertKey(new KeyBean(skid, styp, skev, skcv))) {
+					view.updateStatusBar("Operation successful.");
 					showAllKeys();
 					return OPERATIONSUCCESS;
 				} else {
 					Toolkit.getDefaultToolkit().beep();
-					mvb.updateStatusBar("Operation failed.");
+					view.updateStatusBar("Operation failed.");
 					return OPERATIONFAILED;
 				}
 			} catch (NumberFormatException ex) {
@@ -1417,9 +1412,6 @@ public class KeyController implements ActionListener, ExceptionListener {
 	 * This class creates a dialog box for updating a key.
 	 */
 	class KeyUpdateDialog extends JDialog implements ActionListener {
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = 1L;
 		private JTextField kid = makeTextField(8);
 		private JTextField typ = makeTextField(3);
@@ -1465,7 +1457,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(kid, c);
 			inputPane.add(kid);
 
-			// create and place key name label
+			// create and place key type label
 			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
@@ -1473,7 +1465,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(label, c);
 			inputPane.add(label);
 
-			// place key name field
+			// place key type field
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
@@ -1551,15 +1543,15 @@ public class KeyController implements ActionListener, ExceptionListener {
 					return VALIDATIONERROR;
 				}
 
-				mvb.updateStatusBar("Updating key...");
+				view.updateStatusBar("Updating key...");
 
-				if (key.updateKey(new KeyBean(skid, styp, skev, skcv))) {
-					mvb.updateStatusBar("Operation successful.");
+				if (model.updateKey(new KeyBean(skid, styp, skev, skcv))) {
+					view.updateStatusBar("Operation successful.");
 					showAllKeys();
 					return OPERATIONSUCCESS;
 				} else {
 					Toolkit.getDefaultToolkit().beep();
-					mvb.updateStatusBar("Operation failed.");
+					view.updateStatusBar("Operation failed.");
 					return OPERATIONFAILED;
 				}
 			} catch (NumberFormatException ex) {
@@ -1704,15 +1696,15 @@ public class KeyController implements ActionListener, ExceptionListener {
 					return VALIDATIONERROR;
 				}
 
-				mvb.updateStatusBar("Deleting key...");
+				view.updateStatusBar("Deleting key...");
 
-				if (key.deleteKey(skid, styp)) {
-					mvb.updateStatusBar("Operation successful.");
+				if (model.deleteKey(skid, styp)) {
+					view.updateStatusBar("Operation successful.");
 					showAllKeys();
 					return OPERATIONSUCCESS;
 				} else {
 					Toolkit.getDefaultToolkit().beep();
-					mvb.updateStatusBar("Operation failed.");
+					view.updateStatusBar("Operation failed.");
 					return OPERATIONFAILED;
 				}
 			} catch (NumberFormatException ex) {

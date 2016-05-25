@@ -4,7 +4,7 @@ package ssm.ui;
 
 import javax.swing.*;
 
-import ssm.util.MvbOracleConnection;
+import ssm.util.JDBCConnection;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -13,13 +13,7 @@ import java.awt.event.*;
  * The login window
  */
 public class LoginWindow extends JDialog implements ActionListener {
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
-
-	// MvbOracleConnection represents a connection to an Oracle database
-	private MvbOracleConnection mvb = MvbOracleConnection.getInstance();
 
 	// user is allowed 3 login attempts
 	private int loginAttempts = 0;
@@ -108,11 +102,7 @@ public class LoginWindow extends JDialog implements ActionListener {
 	 * event handler for password field and OK button
 	 */
 	public void actionPerformed(ActionEvent e) {
-		// if (mvb.connect(usernameField.getText(),
-		// String.valueOf(passwordField.getPassword()))) {
-		if (mvb.connect()) {
-			// if the username and password are valid,
-			// get rid of the login window
+		if (JDBCConnection.getInstance().connect()) {
 			dispose();
 		} else {
 			loginAttempts++;
@@ -121,7 +111,6 @@ public class LoginWindow extends JDialog implements ActionListener {
 				dispose();
 				System.exit(0);
 			} else {
-				// clear the password
 				passwordField.setText("");
 			}
 		}

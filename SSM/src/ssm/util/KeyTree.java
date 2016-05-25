@@ -24,7 +24,7 @@ public class KeyTree {
 		return instance;
 	}
 
-	KeyTree3 root, branchTMK;
+	KeyTreeModel root, branchTMK;
 	protected EventListenerList listenerList = new EventListenerList();
 
 	public void addExceptionListener(ExceptionListener l) {
@@ -37,8 +37,8 @@ public class KeyTree {
 	private List<KeyBean> TPK_ATM;
 	private List<KeyBean> ZPK;
 
-	private boolean isLMKInited = false;
-	private boolean isTMKInited = false;
+	public boolean isLMKInited = false;
+	public boolean isTMKInited = false;
 
 	protected KeyTree() {
 		ResetTree();
@@ -112,7 +112,7 @@ public class KeyTree {
 		return LMK;
 	}
 
-	public KeyTree3 getTree() {
+	public KeyTreeModel getTree() {
 		return root;
 	}
 
@@ -123,7 +123,7 @@ public class KeyTree {
 		if (!Des.Enc(Des.BDKDec(LMK.getKev()), "0000000000000000").startsWith(LMK.getKcv()))
 			throw new KeyException("LMK KCV Error!");
 
-		root = new KeyTree3(LMK);
+		root = new KeyTreeModel(LMK);
 
 		if (isTMKInited) {
 			if (!Des.Enc(Des.LMKDec(TMK.getKev()), "0000000000000000").startsWith(TMK.getKcv()))
@@ -156,7 +156,7 @@ public class KeyTree {
 			else
 				throw new KeyException("LMK isn't inited");
 		} else {
-			if (isLMKInited && kb.isTMK())
+			if (isTMKInited && kb.isTMK())
 				throw new KeyException("TMK can't be overwritten!");
 			if (!isLMKInited && kb.isATM())
 				throw new KeyException("TMK isn't inited!");

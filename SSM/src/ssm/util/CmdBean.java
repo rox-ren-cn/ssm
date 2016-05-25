@@ -108,9 +108,9 @@ public class CmdBean {
 	private final static int PINBLOCK_LEN = 32;
 	private final static int PAN_LEN = 19;
 
-	public CmdBean(String data) throws BadCmdException {
+	public CmdBean(String data) throws CmdException {
 		if (data.length() < 5)
-			throw new BadCmdException("Invalid length");
+			throw new CmdException("Invalid length");
 		int offset = 3; // Three bytes fixed header;
 		Command = data.substring(offset, offset + CMD_LEN);
 		offset += CMD_LEN;
@@ -118,85 +118,85 @@ public class CmdBean {
 		switch (Command) {
 		case INIT_TMK:
 			if (data.length() < offset + ENTITYID_LEN)
-				throw new BadCmdException("Invalid ATM ID Length");
+				throw new CmdException("Invalid ATM ID Length");
 			ATMID = data.substring(offset, offset + ENTITYID_LEN);
 			offset += ENTITYID_LEN;
 			break;
 		case EXCH_TXK:
 			if (data.length() < offset + MODE_LEN)
-				throw new BadCmdException("Invalid MODE Length");
+				throw new CmdException("Invalid MODE Length");
 			Mode = data.substring(offset, offset + MODE_LEN);
 			offset += MODE_LEN;
 
 			if (data.length() < offset + ENTITYID_LEN)
-				throw new BadCmdException("Invalid ATM ID Length");
+				throw new CmdException("Invalid ATM ID Length");
 			ATMID = data.substring(offset, offset + ENTITYID_LEN);
 			offset += ENTITYID_LEN;
 			break;
 		case TRNS_PIN:
 			if (data.length() < offset + ENTITYID_LEN)
-				throw new BadCmdException("Invalid ATM ID Length");
+				throw new CmdException("Invalid ATM ID Length");
 			ATMID = data.substring(offset, offset + ENTITYID_LEN);
 			offset += ENTITYID_LEN;
 
 			if (data.length() < offset + ENTITYID_LEN)
-				throw new BadCmdException("Invalid ZPK Entity ID Length");
+				throw new CmdException("Invalid ZPK Entity ID Length");
 			EntityID = data.substring(offset, offset + ENTITYID_LEN);
 			offset += ENTITYID_LEN;
 
 			if (data.length() < offset + PINBLOCK_LEN)
-				throw new BadCmdException("Invalid PIN Block Length");
+				throw new CmdException("Invalid PIN Block Length");
 			PINBlock = data.substring(offset, offset + PINBLOCK_LEN);
 			offset += PINBLOCK_LEN;
 			break;
 		case CLR_PIN:
 			if (data.length() < offset + ENTITYID_LEN)
-				throw new BadCmdException("Invalid ATM ID Length");
+				throw new CmdException("Invalid ATM ID Length");
 			ATMID = data.substring(offset, offset + ENTITYID_LEN);
 			offset += ENTITYID_LEN;
 
 			if (data.length() < offset + PAN_LEN)
-				throw new BadCmdException("Invalid PAN Length");
+				throw new CmdException("Invalid PAN Length");
 			Pan = data.substring(offset, offset + PAN_LEN);
 			offset += PAN_LEN;
 
 			if (data.length() < offset + PINBLOCK_LEN)
-				throw new BadCmdException("Invalid PIN Block Length");
+				throw new CmdException("Invalid PIN Block Length");
 			PINBlock = data.substring(offset, offset + PINBLOCK_LEN);
 			offset += PINBLOCK_LEN;
 			break;
 		default:
-			throw new BadCmdException("Invalid cmd" + Command);
+			throw new CmdException("Invalid cmd" + Command);
 		}
 
 		CheckInput();
 
 		if (data.length() != offset)
-			throw new BadCmdException("Extra bytes following cmd:" + Command + " expecting length:" + offset
+			throw new CmdException("Extra bytes following cmd:" + Command + " expecting length:" + offset
 					+ ", actual length:" + data.length());
 	}
 
-	void CheckInput() throws BadCmdException {
+	void CheckInput() throws CmdException {
 		if (LOCALENTITY.equals(ATMID))
-			throw new BadCmdException("Bad ATM ID, it can't be 99999999");
+			throw new CmdException("Bad ATM ID, it can't be 99999999");
 
 		if (LOCALENTITY.equals(EntityID))
-			throw new BadCmdException("Bad Entity ID, it can't be 99999999");
+			throw new CmdException("Bad Entity ID, it can't be 99999999");
 
 		if (ATMID != null && ATMID.length() != ENTITYID_LEN)
-			throw new BadCmdException("Bad ATM ID length, it shall be " + ENTITYID_LEN);
+			throw new CmdException("Bad ATM ID length, it shall be " + ENTITYID_LEN);
 
 		if (EntityID != null && EntityID.length() != ENTITYID_LEN)
-			throw new BadCmdException("Bad Entity ID length, it shall be " + ENTITYID_LEN);
+			throw new CmdException("Bad Entity ID length, it shall be " + ENTITYID_LEN);
 
 		if (Mode != null && Mode.length() != MODE_LEN)
-			throw new BadCmdException("Bad Mode length, it shall be " + MODE_LEN);
+			throw new CmdException("Bad Mode length, it shall be " + MODE_LEN);
 
 		if (PINBlock != null && PINBlock.length() != PINBLOCK_LEN)
-			throw new BadCmdException("Bad PINBlock, it shall be " + PINBLOCK_LEN);
+			throw new CmdException("Bad PINBlock, it shall be " + PINBLOCK_LEN);
 
 		if (Pan != null && Pan.length() != PAN_LEN)
-			throw new BadCmdException("Bad PAN, it shall be " + PAN_LEN);
+			throw new CmdException("Bad PAN, it shall be " + PAN_LEN);
 	}
 
 	public String getResponse() {

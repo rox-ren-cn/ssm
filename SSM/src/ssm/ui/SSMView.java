@@ -86,16 +86,39 @@ public class SSMView extends JFrame {
 		// anonymous inner class to terminate program
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
+				log.debug("SSM terminated");
 				System.exit(0);
 			}
 		});
-		log.debug("?");
 	}
 
 	public JMenuItem miInitLMK = null;
 	public JMenuItem miInitTMK = null;
 	public JMenuItem miInputZPK = null;
 	public JMenuItem miOutputZPK = null;
+
+	public void setMenuLevel(int i) {
+		switch (i) {
+		case 0:
+			miInitLMK.setEnabled(true);
+			miInitTMK.setEnabled(false);
+			miInputZPK.setEnabled(false);
+			miOutputZPK.setEnabled(false);
+			break;
+		case 1:
+			miInitLMK.setEnabled(false);
+			miInitTMK.setEnabled(true);
+			miInputZPK.setEnabled(true);
+			miOutputZPK.setEnabled(true);
+			break;
+		case 2:
+			miInitLMK.setEnabled(false);
+			miInitTMK.setEnabled(false);
+			miInputZPK.setEnabled(true);
+			miOutputZPK.setEnabled(true);
+			break;
+		}
+	}
 
 	private void setupKeyAdminMenu(JMenuBar mb) {
 		keyAdmin = new JMenu("Key Admin");
@@ -220,14 +243,14 @@ public class SSMView extends JFrame {
 }
 
 class ControllerRegister extends WindowAdapter {
-	private SSMView mvb;
+	private SSMView view;
 
-	public ControllerRegister(SSMView mvb) {
-		this.mvb = mvb;
+	public ControllerRegister(SSMView view) {
+		this.view = view;
 	}
 
 	public void windowClosed(WindowEvent e) {
-		mvb.registerControllers();
-		mvb.showAllKeys();
+		view.registerControllers();
+		view.showAllKeys();
 	}
 }

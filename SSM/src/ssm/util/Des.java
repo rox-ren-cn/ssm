@@ -225,4 +225,11 @@ public class Des {
 	};
 
 	private static final Cipher cdes, c3des;
+
+	public static String logic(logic_op xor, String part1, String part2) {
+		byte[] p1 = new byte[part1.length()/2];
+		p1 = toBytes(part1);
+		logic(xor, p1, toBytes(part2));
+		return toHexStr(p1);
+	}
 }

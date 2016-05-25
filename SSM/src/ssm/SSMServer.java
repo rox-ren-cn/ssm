@@ -1,14 +1,18 @@
 package ssm;
 
+import ssm.ui.ExceptionEvent;
+import ssm.ui.ExceptionListener;
 import ssm.ui.KeyModel;
-import ssm.util.BadCmdException;
+import ssm.util.CmdException;
 import ssm.util.CmdBean;
 import ssm.util.Des;
 import ssm.util.KeyBean;
 import ssm.util.KeyException;
-import ssm.util.MvbOracleConnection;
+import ssm.util.JDBCConnection;
 
 import java.net.*;
+
+import javax.swing.event.EventListenerList;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,25 +33,30 @@ public class SSMServer extends Thread {
 		this.port = port;
 	}
 
-	MvbOracleConnection mvb = MvbOracleConnection.getInstance();
+	JDBCConnection mvb = JDBCConnection.getInstance();
 
 	private static class Capitalizer extends Thread {
+		private SSMServer father;
 		private Socket socket;
 		private int clientNumber;
 
 		private static final Log log = LogFactory.getLog(Capitalizer.class);
-		
-		public Capitalizer(Socket socket, int clientNumber) {
+
+		public Capitalizer(SSMServer father, Socket socket, int clientNumber) {
+			this.father = father;
 			this.socket = socket;
 			this.clientNumber = clientNumber;
-			log("New connection with client# " + clientNumber + " at " + socket);
+			log.debug("New connection with client# " + clientNumber + " at " + socket);
+			ExceptionEvent event = new ExceptionEvent(this,
+					"New connection with client# " + clientNumber + " at " + socket);
+			father.fireExceptionGenerated(event);
 		}
 
 		public void run() {
 			KeyModel keyModel = new KeyModel(1);
 
 			Thread.currentThread().setName("SSM Server Worker " + clientNumber);
-			
+
 			try {
 				final int MAX_LENGTH = 128;
 				int iLength;
@@ -116,37 +125,50 @@ public class SSMServer extends Thread {
 							cmdBean.setErrorCode(CmdBean.EC_UNKNOWN);
 							break;
 						}
-					} catch (BadCmdException e) {
+					} catch (CmdException e) {
 						log.fatal("Bad cmd: " + e.getMessage());
+						ExceptionEvent event = new ExceptionEvent(this,
+								"Bad cmd with client# " + clientNumber + " " + e.getMessage());
+						father.fireExceptionGenerated(event);
+
 					} catch (KeyException e) {
 						log.fatal("Bad key: " + e.getMessage());
+						ExceptionEvent event = new ExceptionEvent(this,
+								"Bad key with client# " + clientNumber + " " + e.getMessage());
+						father.fireExceptionGenerated(event);
+
 					} catch (Exception e) {
 						log.fatal("Other exception: " + e.getMessage());
+						ExceptionEvent event = new ExceptionEvent(this,
+								"Other exception with client# " + clientNumber + " : " + e.getMessage());
+						father.fireExceptionGenerated(event);
 					}
 
 					String rsp = cmdBean.getResponse();
 
 					out.write(rsp.getBytes(), 0, rsp.length());
-					log.info("SendOut message" + rsp);
+					log.info("SendOut message:" + rsp);
+					ExceptionEvent event = new ExceptionEvent(this,
+							"Client# " + clientNumber + " SendOut message:" + rsp);
+					father.fireExceptionGenerated(event);
 				}
 
-			} catch (BindException e) {
-				log.fatal("Bind error: " + e.getMessage());
-				// System.exit(0);
 			} catch (IOException e) {
 				log.fatal("IO error: " + e.getMessage());
+				ExceptionEvent event = new ExceptionEvent(this,
+						"IO error on client# " + clientNumber + " : " + e.getMessage());
+				father.fireExceptionGenerated(event);
 			} finally {
 				try {
 					socket.close();
 				} catch (IOException e) {
 					log.fatal("Server error: " + e.getMessage());
 				}
-				log("Connection with client# " + clientNumber + " closed");
+				log.debug("Connection with client# " + clientNumber + " closed");
+				ExceptionEvent event = new ExceptionEvent(this,
+						"Connection with client# " + clientNumber + " closed");
+				father.fireExceptionGenerated(event);
 			}
-		}
-
-		private void log(String message) {
-			System.out.println(message);
 		}
 	}
 
@@ -162,18 +184,16 @@ public class SSMServer extends Thread {
 				listener = new ServerSocket(port);
 				try {
 					while (true) {
-						new Capitalizer(listener.accept(), clientNumber++).start();
+						new Capitalizer(this, listener.accept(), clientNumber++).start();
 					}
 				} finally {
 					listener.close();
 				}
 			} catch (IOException e) {
 				log.info("Server IO error:" + e.getMessage());
+				ExceptionEvent event = new ExceptionEvent(this, e.getMessage());
+				fireExceptionGenerated(event);
 			}
-			// if (Thread.currentThread().isInterrupted()) {
-			// cleanup
-			// }
-
 		}
 
 	}
@@ -189,4 +209,23 @@ public class SSMServer extends Thread {
 		running = false;
 	}
 
+	protected EventListenerList listenerList = new EventListenerList();
+
+	public void addExceptionListener(ExceptionListener l) {
+		listenerList.add(ExceptionListener.class, l);
+	}
+
+	public void removeExceptionListener(ExceptionListener l) {
+		listenerList.remove(ExceptionListener.class, l);
+	}
+
+	public void fireExceptionGenerated(ExceptionEvent ex) {
+		Object[] listeners = listenerList.getListenerList();
+
+		for (int i = listeners.length - 2; i >= 0; i -= 2) {
+			if (listeners[i] == ExceptionListener.class) {
+				((ExceptionListener) listeners[i + 1]).exceptionGenerated(ex);
+			}
+		}
+	}
 }

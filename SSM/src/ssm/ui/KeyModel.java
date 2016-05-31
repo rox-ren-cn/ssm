@@ -33,7 +33,7 @@ public class KeyModel {
 	public boolean insertKey(KeyBean clearKey) {
 		try {
 			KeyBean encryptedKey = keyTree.insertKey(clearKey);
-			ps = con.prepareStatement("INSERT INTO `keys` VALUES (?,?,?,?)");
+			ps = con.prepareStatement("INSERT INTO keys VALUES (?,?,?,?)");
 
 			ps.setString(1, encryptedKey.getKid());
 			ps.setString(2, encryptedKey.getTyp());
@@ -66,7 +66,7 @@ public class KeyModel {
 	public boolean updateKey(KeyBean clearKey) throws KeyException {
 		try {
 			KeyBean encryptedKey = keyTree.updateKey(clearKey);
-			ps = con.prepareStatement("UPDATE `keys` SET `kev` = ?, `kcv` = ? WHERE `entityid` = ? and `keytype` = ?");
+			ps = con.prepareStatement("UPDATE keys SET kev = ?, kcv = ? WHERE entityid = ? and keytype = ?");
 
 			ps.setString(1, encryptedKey.getKev());
 			ps.setString(2, encryptedKey.getKcv());
@@ -101,7 +101,7 @@ public class KeyModel {
 	// No commit
 	public boolean deleteKey(String entitiyid, String keytype, boolean commit) {
 		try {
-			ps = con.prepareStatement("DELETE FROM `keys` WHERE `entityid` = ? and `keytype` = ?");
+			ps = con.prepareStatement("DELETE FROM keys WHERE entityid = ? and keytype = ?");
 
 			ps.setString(1, entitiyid);
 			ps.setString(2, keytype);
@@ -130,7 +130,7 @@ public class KeyModel {
 
 	public KeyTree showKeys(int i) {
 		try {
-			ps = con.prepareStatement("SELECT k.* FROM `keys` k", ResultSet.TYPE_SCROLL_INSENSITIVE,
+			ps = con.prepareStatement("SELECT k.* FROM keys k", ResultSet.TYPE_SCROLL_INSENSITIVE,
 					ResultSet.CONCUR_READ_ONLY);
 
 			ResultSet rs = ps.executeQuery();
@@ -147,7 +147,7 @@ public class KeyModel {
 	public KeyTree loadKeys() {
 		try {
 			keyTree = KeyTree.getInstance();
-			ps = con.prepareStatement("SELECT k.* FROM `keys` k", ResultSet.TYPE_SCROLL_INSENSITIVE,
+			ps = con.prepareStatement("SELECT k.* FROM keys k", ResultSet.TYPE_SCROLL_INSENSITIVE,
 					ResultSet.CONCUR_READ_ONLY);
 
 			ResultSet rs = ps.executeQuery();
@@ -163,7 +163,7 @@ public class KeyModel {
 
 	public ResultSet editKey() {
 		try {
-			ps = con.prepareStatement("SELECT k.* FROM `keys` k", ResultSet.TYPE_SCROLL_INSENSITIVE,
+			ps = con.prepareStatement("SELECT k.* FROM keys k", ResultSet.TYPE_SCROLL_INSENSITIVE,
 					ResultSet.CONCUR_UPDATABLE);
 
 			ResultSet rs = ps.executeQuery();
@@ -178,7 +178,7 @@ public class KeyModel {
 
 	public boolean findKey(String entitiyid, String keytype) {
 		try {
-			ps = con.prepareStatement("SELECT kcv FROM `keys` where `entityid` = ? and `keytype` = ?");
+			ps = con.prepareStatement("SELECT kcv FROM keys where entityid = ? and keytype = ?");
 
 			ps.setString(1, entitiyid);
 			ps.setString(2, keytype);
@@ -200,7 +200,7 @@ public class KeyModel {
 
 	public KeyBean getKey(String entitiyid, String keytype) {
 		try {
-			ps = con.prepareStatement("SELECT * FROM `keys` where `entityid` = ? and `keytype` = ?");
+			ps = con.prepareStatement("SELECT * FROM keys where entityid = ? and keytype = ?");
 
 			ps.setString(1, entitiyid);
 			ps.setString(2, keytype);

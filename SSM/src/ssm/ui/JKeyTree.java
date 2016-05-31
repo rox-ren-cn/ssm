@@ -7,12 +7,14 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
@@ -30,11 +32,20 @@ public class JKeyTree extends JTree {
 
 	/**
 	 * All this constructor method has to do is set the TreeModel and
-	 * TreeCellRenderer objects for the tree. 
+	 * TreeCellRenderer objects for the tree.
 	 */
 	public JKeyTree(KeyTreeModel kt) {
 		super(kt);
+		ImageIcon LeafIcon = new ImageIcon(JKeyTree.class.getResource("/icons/Key.ico"));
+		ImageIcon OpenIcon = new ImageIcon(JKeyTree.class.getResource("/icons/OpenKey.ico"));
+//		ImageIcon ClosedIcon = new ImageIcon(JKeyTree.class.getResource("/icons/ClosedKey.ico"));
+
+		DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
+		renderer.setLeafIcon(LeafIcon);
+//		renderer.setClosedIcon(ClosedIcon);
+		renderer.setOpenIcon(OpenIcon);
 		setCellRenderer(new KeyCellRenderer(getCellRenderer()));
+//		setCellRenderer(renderer);
 	}
 
 	public JKeyTree() {
@@ -54,6 +65,7 @@ public class JKeyTree extends JTree {
 
 		// Constructor: just remember the renderer
 		public KeyCellRenderer(TreeCellRenderer renderer) {
+
 			this.renderer = renderer;
 		}
 

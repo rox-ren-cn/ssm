@@ -60,7 +60,7 @@ public class JDBCConnection {
 	public Connection connect(String username, String password) {
 		try {
 			// change the url if the branch table is located somewhere else
-			String url = SSMView.prop.getProperty("ssm.jdbsURL");
+			String url = SSMView.prop.getProperty("ssm.jdbcURL");
 			String driver = SSMView.prop.getProperty("ssm.jdbcDriver");
 			String user = SSMView.prop.getProperty("ssm.dbUsername");
 			String passwd = SSMView.prop.getProperty("ssm.dbPassword");

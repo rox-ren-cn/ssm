@@ -624,12 +624,10 @@ public class KeyController implements ActionListener, ExceptionListener {
 		private static final long serialVersionUID = 1L;
 		private JTextField kid = makeTextField(8);
 		private JTextField typ = makeTextField(3);
-		private JTextField kev = makeTextField(32);
+		private JTextField kev_p1 = makeTextField(32);
+		private JTextField kev_p2 = makeTextField(32);
 		private JTextField kcv = makeTextField(6);
 
-		/*
-		 * Constructor. Creates the dialog's GUI.
-		 */
 		public ZPKInputDialog(JFrame parent) {
 			super(parent, "Input ZPK", true);
 			setResizable(false);
@@ -685,7 +683,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			inputPane.add(typ);
 
 			// create and place key value label
-			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
+			label = new JLabel("Key Value Part1: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
 			c.anchor = GridBagConstraints.EAST;
@@ -696,8 +694,23 @@ public class KeyController implements ActionListener, ExceptionListener {
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
-			gb.setConstraints(kev, c);
-			inputPane.add(kev);
+			gb.setConstraints(kev_p1, c);
+			inputPane.add(kev_p1);
+
+			// create and place key value label
+			label = new JLabel("Key Value Part2: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key value field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kev_p2, c);
+			inputPane.add(kev_p2);
 
 			// create and place key check value label
 			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
@@ -784,7 +797,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			try {
 				String skid = kid.getText();
 				String styp = typ.getText();
-				String skev = kev.getText();
+				String skev = Des.logic(Des.logic_op.xor, kev_p1.getText(), kev_p2.getText());
 				String skcv = kcv.getText();
 
 				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
@@ -821,7 +834,8 @@ public class KeyController implements ActionListener, ExceptionListener {
 		private static final long serialVersionUID = 1L;
 		private JTextField kid = makeTextField(8);
 		private JTextField typ = makeTextField(3);
-		private JTextField kev = makeTextField(32);
+		private JTextField kev_p1 = makeTextField(32);
+		private JTextField kev_p2 = makeTextField(32);
 		private JTextField kcv = makeTextField(6);
 
 		/*
@@ -864,6 +878,11 @@ public class KeyController implements ActionListener, ExceptionListener {
 			kid.setDocument(new LengthRestrictedDocument(8, 0));
 			inputPane.add(kid);
 
+			// when the return key is pressed in the kid field
+			// the query action is performed
+			kid.addActionListener(this);
+			kid.setActionCommand("QUERY");
+
 			// create and place key type label
 			label = new JLabel("Key Type: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
@@ -882,7 +901,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 			inputPane.add(typ);
 
 			// create and place key value label
-			label = new JLabel("Key Value: ", SwingConstants.RIGHT);
+			label = new JLabel("Key Value Part1: ", SwingConstants.RIGHT);
 			c.gridwidth = GridBagConstraints.RELATIVE;
 			c.insets = new Insets(5, 0, 0, 5);
 			c.anchor = GridBagConstraints.EAST;
@@ -893,8 +912,23 @@ public class KeyController implements ActionListener, ExceptionListener {
 			c.gridwidth = GridBagConstraints.REMAINDER;
 			c.insets = new Insets(5, 0, 0, 0);
 			c.anchor = GridBagConstraints.WEST;
-			gb.setConstraints(kev, c);
-			inputPane.add(kev);
+			gb.setConstraints(kev_p1, c);
+			inputPane.add(kev_p1);
+
+			// create and place key value label
+			label = new JLabel("Key Value Part2: ", SwingConstants.RIGHT);
+			c.gridwidth = GridBagConstraints.RELATIVE;
+			c.insets = new Insets(5, 0, 0, 5);
+			c.anchor = GridBagConstraints.EAST;
+			gb.setConstraints(label, c);
+			inputPane.add(label);
+
+			// place key value field
+			c.gridwidth = GridBagConstraints.REMAINDER;
+			c.insets = new Insets(5, 0, 0, 0);
+			c.anchor = GridBagConstraints.WEST;
+			gb.setConstraints(kev_p2, c);
+			inputPane.add(kev_p2);
 
 			// create and place key check value label
 			label = new JLabel("Key Check Value: ", SwingConstants.RIGHT);
@@ -911,22 +945,16 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(kcv, c);
 			inputPane.add(kcv);
 
-			// when the return key is pressed in the last field
-			// of this form, the action performed by the ok button
-			// is executed
-			kcv.addActionListener(this);
-			kcv.setActionCommand("OK");
-
 			// panel for the OK and cancel buttons
 			JPanel buttonPane = new JPanel();
 			buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
 			buttonPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 2));
 
 			JButton OKButton = new JButton("OK");
-			JButton cancelButton = new JButton("Cancel");
+//			JButton cancelButton = new JButton("Cancel");
 			OKButton.addActionListener(this);
-			OKButton.setActionCommand("OK");
-			cancelButton.addActionListener(new ActionListener() {
+//			OKButton.setActionCommand("OK");
+			OKButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					dispose();
 				}
@@ -935,8 +963,8 @@ public class KeyController implements ActionListener, ExceptionListener {
 			// add the buttons to buttonPane
 			buttonPane.add(Box.createHorizontalGlue());
 			buttonPane.add(OKButton);
-			buttonPane.add(Box.createRigidArea(new Dimension(10, 0)));
-			buttonPane.add(cancelButton);
+//			buttonPane.add(Box.createRigidArea(new Dimension(10, 0)));
+//			buttonPane.add(cancelButton);
 
 			contentPane.add(inputPane, BorderLayout.CENTER);
 			contentPane.add(buttonPane, BorderLayout.SOUTH);
@@ -954,10 +982,9 @@ public class KeyController implements ActionListener, ExceptionListener {
 		public void actionPerformed(ActionEvent e) {
 			String actionCommand = e.getActionCommand();
 
-			if (actionCommand.equals("OK")) {
-				switch (validateInsert()) {
+			if (actionCommand.equals("QUERY")) {
+				switch (validateQuery()) {
 				case OPERATIONSUCCESS:
-					dispose();
 					break;
 				case VALIDATIONERROR:
 					Toolkit.getDefaultToolkit().beep();
@@ -971,44 +998,29 @@ public class KeyController implements ActionListener, ExceptionListener {
 			}
 		}
 
-		/*
-		 * Validates the text fields in KeyInsertDialog and then calls
-		 * key.insertKey() if the fields are valid. Returns the operation
-		 * status, which is one of OPERATIONSUCCESS, OPERATIONFAILED,
-		 * VALIDATIONERROR.
-		 */
-		private int validateInsert() {
+		private int validateQuery() {
 			try {
 				String skid = kid.getText();
 				String styp = typ.getText();
-				String skev = kev.getText();
-				String skcv = kcv.getText();
 
-				if (skid.length() == 8 && styp.length() == 3 && skev.length() == 32 && skcv.length() == 6) {
+				if (skid.length() == 8) {
 					// check for duplicates
-					if (model.findKey(skid, styp)) {
+					KeyBean kb = model.getKey(skid, styp);
+					if (kb == null) {
 						Toolkit.getDefaultToolkit().beep();
 						view.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
 						return OPERATIONFAILED;
 					}
+					kev_p1.setText(kb.getKev());
+					kev_p2.setText("00000000000000000000000000000000");
+					kcv.setText(kb.getKcv());
+					view.updateStatusBar("Key retrieved");
+					return OPERATIONSUCCESS;
 				} else {
 					return VALIDATIONERROR;
 				}
 
-				view.updateStatusBar("Inserting key...");
-
-				if (model.insertKey(new KeyBean(skid, styp, skev, skcv))) {
-					view.updateStatusBar("Operation successful.");
-					showAllKeys();
-					return OPERATIONSUCCESS;
-				} else {
-					Toolkit.getDefaultToolkit().beep();
-					view.updateStatusBar("Operation failed.");
-					return OPERATIONFAILED;
-				}
 			} catch (NumberFormatException ex) {
-				// this exception is thrown when a string
-				// cannot be converted to a number
 				return VALIDATIONERROR;
 			}
 		}

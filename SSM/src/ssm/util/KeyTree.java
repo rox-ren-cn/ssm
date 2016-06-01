@@ -120,13 +120,13 @@ public class KeyTree {
 		if (!isLMKInited)
 			throw new KeyException("LMK isn't inited");
 
-		if (!Des.Enc(Des.BDKDec(LMK.getKev()), "0000000000000000").startsWith(LMK.getKcv()))
+		if (!Des.Enc(Des.BDKDec(LMK.getKev()), "0000000000000000").toLowerCase().startsWith(LMK.getKcv().toLowerCase()))
 			throw new KeyException("LMK KCV Error!");
 
 		root = new KeyTreeModel(LMK);
 
 		if (isTMKInited) {
-			if (!Des.Enc(Des.LMKDec(TMK.getKev()), "0000000000000000").startsWith(TMK.getKcv()))
+			if (!Des.Enc(Des.LMKDec(TMK.getKev()), "0000000000000000").toLowerCase().startsWith(TMK.getKcv().toLowerCase()))
 				throw new KeyException("TMK KCV Error!");
 
 			branchTMK = root.addChild(TMK);
@@ -142,7 +142,7 @@ public class KeyTree {
 
 	public void checkKcv(String key, String kcv) throws KeyException {
 		String KCV = Des.Enc(key, "0000000000000000");
-		if (!KCV.startsWith(kcv))
+		if (!KCV.toLowerCase().startsWith(kcv.toLowerCase()))
 			throw new KeyException("KCV is not correct!");
 	}
 

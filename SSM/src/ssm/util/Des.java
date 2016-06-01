@@ -136,7 +136,7 @@ public class Des {
 		return toBytes(String.format("%-16s", "0" + Integer.toString(pin.length()) + pin).replace(' ', 'F'));
 	}
 
-	public static String GetPin(String pan, String pinblock) throws KeyException {
+	public static String GetPin(String pan, String pinblock) throws KeyException, DataException {
 		String a = pan.trim();
 		String b = String.format("%19s", a);
 		String c = b.replace(' ', '0');
@@ -144,7 +144,7 @@ public class Des {
 		byte[] pc = toBytes("0000" + s);
 		logic(logic_op.xor, pc, pinblock.getBytes());
 		if (pc[1] < 4 || pc[1] > 12)
-			throw new KeyException("Invalid PIN Block");
+			throw new DataException("Invalid PIN Block");
 		return new String(pc, 2, pc[1]);
 	}
 
@@ -227,7 +227,7 @@ public class Des {
 	private static final Cipher cdes, c3des;
 
 	public static String logic(logic_op xor, String part1, String part2) {
-		byte[] p1 = new byte[part1.length()/2];
+		byte[] p1 = new byte[part1.length() / 2];
 		p1 = toBytes(part1);
 		logic(xor, p1, toBytes(part2));
 		return toHexStr(p1);

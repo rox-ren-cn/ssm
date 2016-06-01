@@ -7,6 +7,8 @@ import javax.swing.event.EventListenerList;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import ssm.util.CmdBean;
+import ssm.util.DataException;
 import ssm.util.Des;
 import ssm.util.KeyBean;
 import ssm.util.KeyTree;
@@ -227,7 +229,7 @@ public class KeyModel {
 				log.debug("Delete existing TMK failed");
 				fireExceptionGenerated(new ExceptionEvent(this, "Delete existing TMK failed"));
 			}
-				
+
 		}
 		if (findKey(atmID, "TPK")) {
 			if (!deleteKey(atmID, "TPK", false)) {
@@ -281,10 +283,28 @@ public class KeyModel {
 			throw new KeyException("ATM TPK doesn't exist");
 		KeyBean ZPK = getKey(entityID, "ZPK");
 		if (ZPK == null)
-			throw new KeyException("ATM TPK doesn't exist");
+			throw new KeyException("ZPK doesn't exist for " + entityID);
 
 		String clearPB = Des.Dec(Des.LMKDec(TPK.getKev()), PINBlock);
 		return Des.Enc(Des.LMKDec(ZPK.getKev()), clearPB);
+	}
+
+	public void TransPIN(CmdBean cb) throws KeyException {
+		// Generate New Key, encrypted by current TMK
+		KeyBean TPK = getKey(cb.getATMID(), "TPK");
+		if (TPK == null) {
+			cb.setErrorCode("01");
+			throw new KeyException("ATM TPK doesn't exist");
+		}
+		KeyBean ZPK = getKey(cb.getEntityID(), "ZPK");
+		if (ZPK == null) {
+			cb.setErrorCode("02");
+			throw new KeyException("ZPK doesn't exist for " + cb.getEntityID());
+		}
+
+		String clearPB = Des.Dec(Des.LMKDec(TPK.getKev()), cb.getPINBlock());
+		cb.setData(Des.Enc(Des.LMKDec(ZPK.getKev()), clearPB));
+		cb.setErrorCode("00");
 	}
 
 	public String GetClearPIN(String atmID, String PINBlock) throws KeyException {
@@ -295,6 +315,27 @@ public class KeyModel {
 
 		String clearPB = Des.Dec(Des.LMKDec(TPK.getKev()), PINBlock);
 		return clearPB;
+	}
+
+	public void GetClearPIN(CmdBean cb) throws KeyException, DataException {
+		// Generate New Key, encrypted by current TMK
+		KeyBean TPK = getKey(cb.getATMID(), "TPK");
+		if (TPK == null) {
+			cb.setErrorCode("01");
+			throw new KeyException("ATM TPK doesn't exist");
+		}
+
+		try {
+			cb.setData(Des.GetPin(cb.getPan(), Des.Dec(Des.LMKDec(TPK.getKev()), cb.getPINBlock())));
+		} catch (DataException e) {
+			cb.setErrorCode("02");
+			throw e;
+		} catch (KeyException e) {
+			cb.setErrorCode("01");
+			throw e;
+		}
+		cb.setErrorCode("00");
+		return;
 	}
 
 	public Connection getConnection() {

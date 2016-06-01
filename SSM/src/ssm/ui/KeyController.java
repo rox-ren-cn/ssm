@@ -1011,7 +1011,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 						view.updateStatusBar("Key " + skid + "/" + styp + " already exists!");
 						return OPERATIONFAILED;
 					}
-					kev_p1.setText(kb.getKev());
+					kev_p1.setText(Des.LMKDec(kb.getKev()));
 					kev_p2.setText("00000000000000000000000000000000");
 					kcv.setText(kb.getKcv());
 					view.updateStatusBar("Key retrieved");

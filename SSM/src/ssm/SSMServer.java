@@ -4,6 +4,7 @@ import ssm.ui.ExceptionEvent;
 import ssm.ui.ExceptionListener;
 import ssm.ui.KeyModel;
 import ssm.util.CmdException;
+import ssm.util.DataException;
 import ssm.util.CmdBean;
 import ssm.util.Des;
 import ssm.util.KeyBean;
@@ -110,15 +111,16 @@ public class SSMServer extends Thread {
 							}
 							break;
 						case CmdBean.TRNS_PIN:
-							String s = keyModel.TransPIN(cmdBean.getATMID(), cmdBean.getEntityID(),
-									cmdBean.getPINBlock());
-							cmdBean.setData(s);
-							cmdBean.setErrorCode("00");
+//							String s = keyModel.TransPIN(cmdBean.getATMID(), cmdBean.getEntityID(), cmdBean.getPINBlock());
+//							cmdBean.setData(s);
+//							cmdBean.setErrorCode("00");
+							keyModel.TransPIN(cmdBean);
 							break;
 						case CmdBean.CLR_PIN:
-							String c = keyModel.GetClearPIN(cmdBean.getATMID(), cmdBean.getPINBlock());
-							cmdBean.setData(Des.GetPin(cmdBean.getPan(), c));
-							cmdBean.setErrorCode("00");
+//							String c = keyModel.GetClearPIN(cmdBean.getATMID(), cmdBean.getPINBlock());
+//							cmdBean.setData(Des.GetPin(cmdBean.getPan(), c));
+//							cmdBean.setErrorCode("00");
+							keyModel.GetClearPIN(cmdBean);
 							break;
 						default:
 							log.fatal("[fail] Invalid cmd: [" + cmdBean.getCmd() + "]");
@@ -135,6 +137,12 @@ public class SSMServer extends Thread {
 						log.fatal("Bad key: " + e.getMessage());
 						ExceptionEvent event = new ExceptionEvent(this,
 								"Bad key with client# " + clientNumber + " " + e.getMessage());
+						father.fireExceptionGenerated(event);
+
+					} catch (DataException e) {
+						log.fatal("Bad data: " + e.getMessage());
+						ExceptionEvent event = new ExceptionEvent(this,
+								"Bad data with client# " + clientNumber + " " + e.getMessage());
 						father.fireExceptionGenerated(event);
 
 					} catch (Exception e) {

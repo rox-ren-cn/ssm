@@ -1539,11 +1539,6 @@ public class KeyController implements ActionListener, ExceptionListener {
 			}
 		}
 
-		/*
-		 * Validates the text fields in KeyUpdateDialog and then calls
-		 * key.branchUpdate() if the fields are valid. Returns the operation
-		 * status.
-		 */
 		private int validateUpdate() {
 			try {
 				String skid = kid.getText();
@@ -1639,9 +1634,6 @@ public class KeyController implements ActionListener, ExceptionListener {
 			gb.setConstraints(typ, c);
 			inputPane.add(typ);
 
-			// when the return key is pressed while in the
-			// branchID field, the action performed by the ok button
-			// is executed
 			typ.addActionListener(this);
 			typ.setActionCommand("OK");
 
@@ -1694,11 +1686,6 @@ public class KeyController implements ActionListener, ExceptionListener {
 			}
 		}
 
-		/*
-		 * Validates the text fields in KeyDeleteDialog and then calls
-		 * key.branchDelete() if the fields are valid. Returns the operation
-		 * status.
-		 */
 		private int validateDelete() {
 			try {
 				String skid = kid.getText();

@@ -1,5 +1,4 @@
 package ssm.ui;
-// File: BranchModel.java
 
 import java.sql.*;
 import javax.swing.event.EventListenerList;

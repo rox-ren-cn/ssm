@@ -54,12 +54,8 @@ public class SSMView extends JFrame {
 		// indent first menu
 		menuBar.add(Box.createRigidArea(new Dimension(10, 0)));
 
-		// sets up the branch administration menu and adds it to the
-		// menu bar
 		setupKeyAdminMenu(menuBar);
 
-		// Setup some other menus. You may be asked to add functionality
-		// to these menus in an assignment.
 		setupServiceMenu(menuBar);
 
 		// the scrollpane for the status text field

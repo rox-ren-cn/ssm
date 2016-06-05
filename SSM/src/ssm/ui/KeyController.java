@@ -128,6 +128,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 		server = new SSMServer(Integer.parseInt(SSMView.prop.getProperty("ssm.port")));
 		server.addExceptionListener(this);
 		server.start();
+		view.updateStatusBar("SSM Service started at port: " + server.port);
 	}
 
 	void StopService() {
@@ -140,6 +141,7 @@ public class KeyController implements ActionListener, ExceptionListener {
 				e.printStackTrace();
 			}
 		}
+		view.updateStatusBar("SSM Service stopped");
 	}
 
 	public void exceptionGenerated(ExceptionEvent ex) {

@@ -27,7 +27,7 @@ public class KeyModel {
 		con = JDBCConnection.getInstance().getConnection();
 	}
 
-	public KeyModel(int i) {
+	public KeyModel(int i) throws SQLException {
 		con = JDBCConnection.getInstance().connect("", "");
 	}
 

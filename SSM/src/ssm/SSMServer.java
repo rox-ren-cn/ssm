@@ -12,6 +12,7 @@ import ssm.util.KeyException;
 import ssm.util.JDBCConnection;
 
 import java.net.*;
+import java.sql.SQLException;
 
 import javax.swing.event.EventListenerList;
 
@@ -24,7 +25,7 @@ public class SSMServer extends Thread {
 
 	private static final Log log = LogFactory.getLog(SSMServer.class);
 
-	int port;
+	public int port;
 
 	int iPort;
 	ServerSocket lsn_sock = null;
@@ -54,7 +55,15 @@ public class SSMServer extends Thread {
 		}
 
 		public void run() {
-			KeyModel keyModel = new KeyModel(1);
+			KeyModel keyModel;
+			try {
+				keyModel = new KeyModel(1);
+			} catch (SQLException e) {
+				ExceptionEvent event = new ExceptionEvent(this,
+						"Client #" + clientNumber + " DB Error: " + e.getMessage());
+				father.fireExceptionGenerated(event);
+				return;
+			}
 
 			Thread.currentThread().setName("SSM Server Worker " + clientNumber);
 

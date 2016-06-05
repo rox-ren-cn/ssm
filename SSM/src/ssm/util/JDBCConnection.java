@@ -27,20 +27,28 @@ public class JDBCConnection {
 		return _conn;
 	}
 
-	public boolean connect() {
-		con = connect("", "");
+	public boolean connect(String username, char[] password) throws SQLException {
+		con = connect(username, String.valueOf(password));
 		if (con == null)
 			return false;
 
+		SSMView.prop.setProperty("ssm.dbUsername", username);
+		SSMView.prop.setProperty("ssm.dbPassword", String.valueOf(password));
 		return true;
 	}
 
-	public Connection connect(String username, String password) {
+	public Connection connect() throws SQLException {
+		String user = SSMView.prop.getProperty("ssm.dbUsername");
+		String passwd = SSMView.prop.getProperty("ssm.dbPassword");
+		return connect(user, passwd);
+	}
+	
+	public Connection connect(String username, String password) throws SQLException {
 		try {
 			String url = SSMView.prop.getProperty("ssm.jdbcURL");
 			String driver = SSMView.prop.getProperty("ssm.jdbcDriver");
-			String user = SSMView.prop.getProperty("ssm.dbUsername");
-			String passwd = SSMView.prop.getProperty("ssm.dbPassword");
+//			String user = SSMView.prop.getProperty("ssm.dbUsername");
+//			String passwd = SSMView.prop.getProperty("ssm.dbPassword");
 
 			if (!driverLoaded) {
 				try {
@@ -55,13 +63,13 @@ public class JDBCConnection {
 				driverLoaded = true;
 			}
 
-			Connection conn = DriverManager.getConnection(url, user, passwd);
+			Connection conn = DriverManager.getConnection(url, username, password);
 			conn.setAutoCommit(false);
 
 			return conn;
 		} catch (SQLException ex) {
 			log.debug("Connect DB:" + ex.getMessage());
-			return null;
+			throw ex;
 		}
 	}
 

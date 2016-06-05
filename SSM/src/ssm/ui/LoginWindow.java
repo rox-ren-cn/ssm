@@ -8,6 +8,7 @@ import ssm.util.JDBCConnection;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.SQLException;
 
 /*
  * The login window
@@ -25,11 +26,14 @@ public class LoginWindow extends JDialog implements ActionListener {
 	private JLabel passwordLabel = new JLabel("Enter password:  ");
 	private JButton loginButton = new JButton("Log In");
 
+	SSMView parent;
 	/*
 	 * Default constructor. The login window is constructed here.
 	 */
 	public LoginWindow(JFrame parent) {
 		super(parent, "User Login", true);
+		this.parent = (SSMView)parent;
+	
 		setResizable(false);
 
 		passwordField.setEchoChar('*');
@@ -102,17 +106,21 @@ public class LoginWindow extends JDialog implements ActionListener {
 	 * event handler for password field and OK button
 	 */
 	public void actionPerformed(ActionEvent e) {
-		if (JDBCConnection.getInstance().connect()) {
-			dispose();
-		} else {
-			loginAttempts++;
-
-			if (loginAttempts >= 3) {
+		try {
+			if (JDBCConnection.getInstance().connect(usernameField.getText(), passwordField.getPassword())) {
 				dispose();
-				System.exit(0);
 			} else {
-				passwordField.setText("");
+				loginAttempts++;
+
+				if (loginAttempts >= 3) {
+					dispose();
+					System.exit(0);
+				} else {
+					passwordField.setText("");
+				}
 			}
+		} catch (SQLException e1) {
+			parent.updateStatusBar(e1.getMessage());
 		}
 	}
 }

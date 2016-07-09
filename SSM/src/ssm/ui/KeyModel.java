@@ -28,7 +28,7 @@ public class KeyModel {
 	}
 
 	public KeyModel(int i) throws SQLException {
-		con = JDBCConnection.getInstance().connect("", "");
+		con = JDBCConnection.getInstance().connect();
 	}
 
 	public boolean insertKey(KeyBean clearKey) {

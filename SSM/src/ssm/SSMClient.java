@@ -32,22 +32,22 @@ public class SSMClient {
 				try {
 					switch (dataField.getText()) {
 					case "1":
-						msg = "SSMIM12345678";
+						msg = "RPIMIM10001004";
 						break;
 					case "2":
-						msg = "SSMXK012345678";
+						msg = "PRIMXK010001004";
 						break;
 					case "3":
-						msg = "SSMXK112345678";
+						msg = "PRIMXK110001004";
 						break;
 					case "4":
-						msg = "SSMTP123456788888888800000000000000000000000000000000";
+						msg = "PRIMTP123456788888888800000000000000000000000000000000";
 						break;
 					case "5":
-						msg = "SSMCP123456784392260020773618   00000000000000000000000000000000";
+						msg = "PRIMCP123456784392260020773618   00000000000000000000000000000000";
 						break;
 					default:
-						msg = "SSMIM12345678";
+						msg = "PRIMIM12345678";
 					}
 					os.write(msg.getBytes(), 0, msg.length());
 				} catch (IOException e1) {

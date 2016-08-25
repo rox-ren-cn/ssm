@@ -115,7 +115,7 @@ public class SSMServer extends Thread {
 							}
 							if (kb != null) {
 								cmdBean.setData(Des.Enc2(currentTMK.getKev(), kb.getKev()) + kb.getKcv());
-								cmdBean.setData(kb.getKev() + kb.getKcv());
+//								cmdBean.setData(kb.getKev() + kb.getKcv());
 								cmdBean.setErrorCode("00");
 							}
 							break;

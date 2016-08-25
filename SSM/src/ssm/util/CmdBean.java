@@ -26,6 +26,9 @@ public class CmdBean {
 	public static final String EC_UNKNOWN = "99";
 
 	public static final String LOCALENTITY = "99999999";
+	
+	public static final String REQ_HEADER = "PRIM";
+	public static final String RSP_HEADER = "PRIM";
 
 	private String Command;
 
@@ -111,7 +114,7 @@ public class CmdBean {
 	public CmdBean(String data) throws CmdException {
 		if (data.length() < 5)
 			throw new CmdException("Invalid length");
-		int offset = 3; // Three bytes fixed header;
+		int offset = REQ_HEADER.length();
 		Command = data.substring(offset, offset + CMD_LEN);
 		offset += CMD_LEN;
 
@@ -203,16 +206,16 @@ public class CmdBean {
 		String rsp = "";
 		switch (Command) {
 		case INIT_TMK:
-			rsp = "SSM" + INIT_TMK.toLowerCase() + ErrorCode + Data;
+			rsp = RSP_HEADER + INIT_TMK.toLowerCase() + ErrorCode + Data;
 			break;
 		case EXCH_TXK:
-			rsp = "SSM" + EXCH_TXK.toLowerCase() + ErrorCode + Data;
+			rsp = RSP_HEADER + EXCH_TXK.toLowerCase() + ErrorCode + Data;
 			break;
 		case TRNS_PIN:
-			rsp = "SSM" + TRNS_PIN.toLowerCase() + ErrorCode + Data;
+			rsp = RSP_HEADER + TRNS_PIN.toLowerCase() + ErrorCode + Data;
 			break;
 		case CLR_PIN:
-			rsp = "SSM" + TRNS_PIN.toLowerCase() + ErrorCode + Data;
+			rsp = RSP_HEADER + TRNS_PIN.toLowerCase() + ErrorCode + Data;
 			break;
 		}
 		return rsp;

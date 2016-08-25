@@ -261,8 +261,8 @@ public class KeyModel {
 	}
 
 	public KeyBean ExchTPK(String atmID) throws KeyException {
-		// Generate New Key, encrypted by current TMK
-		KeyBean currentTMK = getKey(atmID, "TMK");
+		// Generate New Key, encrypted by current TPK
+		KeyBean currentTMK = getKey(atmID, "TPK");
 		if (currentTMK == null)
 			throw new KeyException("ATM TMK isn't inited");
 		String newKey = Des.randomKey();

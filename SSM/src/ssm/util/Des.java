@@ -142,10 +142,11 @@ public class Des {
 		String c = b.replace(' ', '0');
 		String s = c.substring(6, 18);
 		byte[] pc = toBytes("0000" + s);
-		logic(logic_op.xor, pc, pinblock.getBytes());
-		if (pc[1] < 4 || pc[1] > 12)
+		logic(logic_op.xor, pc, toBytes(pinblock));
+		int iPinLen = pc[0];
+		if (iPinLen < 4 || iPinLen > 12)
 			throw new DataException("Invalid PIN Block");
-		return new String(pc, 2, pc[1]);
+		return toHexStr(pc); //.substring(2, 2 + iPinLen);
 	}
 
 	// Convert double length key to triple length key for DESede spec

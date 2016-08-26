@@ -108,7 +108,7 @@ public class CmdBean {
 	private final static int CMD_LEN = 2;
 	private final static int ENTITYID_LEN = 8;
 	private final static int MODE_LEN = 1;
-	private final static int PINBLOCK_LEN = 32;
+	private final static int PINBLOCK_LEN = 16;
 	private final static int PAN_LEN = 19;
 
 	public CmdBean(String data) throws CmdException {
@@ -166,6 +166,13 @@ public class CmdBean {
 			if (data.length() < offset + PINBLOCK_LEN)
 				throw new CmdException("Invalid PIN Block Length");
 			PINBlock = data.substring(offset, offset + PINBLOCK_LEN);
+			PINBlock.replace(':', 'A');
+			PINBlock.replace(';', 'B');
+			PINBlock.replace('<', 'C');
+			PINBlock.replace('=', 'D');
+			PINBlock.replace('>', 'E');
+			PINBlock.replace('?', 'F');
+			
 			offset += PINBLOCK_LEN;
 			break;
 		default:

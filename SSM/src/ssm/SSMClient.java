@@ -41,10 +41,21 @@ public class SSMClient {
 						msg = "PRIMXK110001004";
 						break;
 					case "4":
-						msg = "PRIMTP123456788888888800000000000000000000000000000000";
+						msg = "PRIMTP10001004888888880000000000000000";
 						break;
 					case "5":
-						msg = "PRIMCP123456784392260020773618   00000000000000000000000000000000";
+						msg = "PRIMCP1000100400000000000000000001?65>?1?7<?:9<66";
+						msg = "PRIMCP1000100400000000000000000001F65EF1F7CFA9C66";
+						msg = "PRIMCP100010040000000000000000000CE894149CC2DADAE";
+						break;
+					case "6":
+						msg = "RPIMIM88888888";
+						break;
+					case "7":
+						msg = "PRIMXK088888888";
+						break;
+					case "8":
+						msg = "PRIMXK188888888";
 						break;
 					default:
 						msg = "PRIMIM12345678";

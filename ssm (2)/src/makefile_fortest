@@ -1,0 +1,19 @@
+all:
+
+	@cd ./util>/dev/null;	make -f makefile_fortest
+	@cd ./errlog>/dev/null;	make -f makefile_fortest
+	@cd ./sec>/dev/null;	make -f makefile_fortest
+	@cd ./hsmcmd>/dev/null;	make -f makefile_fortest
+	@cd ./comm>/dev/null;	make -f makefile_fortest
+	@cd ./ssm>/dev/null;	make -f makefile_fortest
+	@cd ./kmc>/dev/null;	make -f makefile_fortest
+clean:
+	@cd ./util>/dev/null;	make clean
+	@cd ./errlog>/dev/null;	make clean
+	@cd ./sec>/dev/null;	make clean
+	@cd ./hsmcmd>/dev/null;	make clean
+	@cd ./comm>/dev/null;	make clean
+	@cd ./ssm>/dev/null;	make clean
+	@cd ./kmc>/dev/null;	make clean
+	
+

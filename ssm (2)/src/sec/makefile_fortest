@@ -1,0 +1,28 @@
+INCDIR = $(SSMWORKPATH)/inc/
+LIBDIR = $(SSMWORKPATH)/lib/
+
+INCLUDE = $(INCDIR)util.h \
+	$(INCDIR)errlog.h \
+	$(INCDIR)sec.h 
+
+SECLIB = $(LIBDIR)/libsec.a
+
+CPP = g++
+CPPFLAG = -c -g -I$(INCDIR)
+
+OBJ = sec.o \
+	des.o
+
+project: $(SECLIB) rmobj
+
+$(SECLIB):$(OBJ)
+	ar -r $(SECLIB) $(OBJ)
+
+sec.o:sec.cpp $(INCLUDE)
+	$(CPP) -DCLEAR_PIN_TEST_FLAG -o sec.o $(CPPFLAG) sec.cpp
+
+des.o:des.cpp $(INCLUDE)
+	$(CPP) -DDCLEAR_PIN_TEST_FLAG -o des.o $(CPPFLAG) des.cpp
+
+rmobj:
+	rm -f *.o *old*

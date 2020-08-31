@@ -1,0 +1,2 @@
+cd $SSMWORKPATH/bin
+KMC

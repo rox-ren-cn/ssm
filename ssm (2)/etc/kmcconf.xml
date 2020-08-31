@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SSM configuration parameters definition file-->
+<KMCConf>
+        <conf>
+                <param name="SecIP" value="129.184.13.7"/>
+                <param name="SecPort" value="2013"/>
+                <!-- for seconds -->
+                <param name="WaitRespTimeout" value="10"/>
+                <param name="KMCKeyFile" value="key.txt"/>
+                <param name="OutFilePath" value="/home/mdv2ref/ssm/kmcfiles/"/>
+        </conf>
+</KMCConf>

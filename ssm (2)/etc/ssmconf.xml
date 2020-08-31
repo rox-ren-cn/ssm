@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SSM configuration parameters definition file-->
+<SSMConf>
+	<conf>
+		<param name="SSMType" value="BNTng"/>
+		<param name="LocalIP" value="129.184.13.7"/>
+		<param name="LocalPort" value="2013"/>
+		<param name="MaxConnections" value="2"/>
+		<param name="BaudRate" value="B19200"/>
+		<param name="DeviceName" value="/dev/ttyS0"/>
+		<param name="LicCheckIP" value="129.184.13.7"/>
+		<param name="LicCheckIPort" value="20001"/>
+		<!-- LOGLEVEL could set as: DEBUG INFO WARN ERROR -->
+		<param name="LOGLEVEL" value="DEBUG"/>
+	</conf>
+</SSMConf>
